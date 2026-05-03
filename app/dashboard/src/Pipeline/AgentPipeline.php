@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Pipeline;
 
-use App\Dashboard\Authorization\WorkspaceAuthorization;
+use App\Dashboard\Context\Builder\ContextBuilderRegistry;
+use App\Dashboard\Gate\CampaignGate;
 use App\Dashboard\Service\AgentChatService;
-use App\Dashboard\Service\EmbeddingService;
-use App\Dashboard\Service\GoogleSearchConsoleService;
-use App\Dashboard\Service\UserSettingsService;
-use App\Dashboard\Service\VectorSearchService;
+use App\Dashboard\Service\UsageQuota;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 
 class AgentPipeline
@@ -17,11 +15,9 @@ class AgentPipeline
     public function __construct(
         private readonly QueryBuilderFactoryInterface $queryFactory,
         private readonly AgentChatService $chatService,
-        private readonly VectorSearchService $vectorSearch,
-        private readonly EmbeddingService $embedder,
-        private readonly UserSettingsService $userSettings,
-        private readonly GoogleSearchConsoleService $gscService,
-        private readonly WorkspaceAuthorization $workspaceAuth,
+        private readonly ContextBuilderRegistry $contextRegistry,
+        private readonly UsageQuota $usageQuota,
+        private readonly CampaignGate $campaignGate,
     ) {}
 
     /**
@@ -32,11 +28,11 @@ class AgentPipeline
      */
     public function run(int $userId, int $campaignId, string $agentType, string $message): array
     {
-        if (!$this->userSettings->canRunAgent($userId)) {
+        if (!$this->usageQuota->canRun($userId)) {
             throw new \RuntimeException('Daily agent run limit reached.');
         }
 
-        $campaign = $this->workspaceAuth->campaignFor($userId, $campaignId);
+        $campaign = $this->campaignGate->forUser($userId, $campaignId);
         if ($campaign === null) {
             throw new \RuntimeException('Campaign not found.');
         }
@@ -56,14 +52,12 @@ class AgentPipeline
             $history = json_decode($session['messages'] ?? '[]', true);
         }
 
-        $kbContext = $this->buildKnowledgeBaseContext($message, (int) $campaign['workspace_id']);
-
-        if ($agentType === 'seo') {
-            $gscContext = $this->buildGscContext($userId);
-            if ($gscContext !== null) {
-                $kbContext[] = $gscContext;
-            }
-        }
+        $kbContext = $this->contextRegistry->build(
+            $agentType,
+            $message,
+            (int) $campaign['workspace_id'],
+            $userId,
+        );
 
         $response = $this->chatService->chat($userId, $agentType, $message, $history, $kbContext);
 
@@ -75,88 +69,12 @@ class AgentPipeline
         $history[] = ['role' => 'assistant', 'content' => $response['content'], 'timestamp' => date('c')];
 
         $sessionId = $this->persistSession($campaignId, $agentType, $userId, $history, $sessionId);
-        $this->userSettings->incrementRunCount($userId);
+        $this->usageQuota->recordRun($userId);
 
         return [
             'response' => $response,
             'session_id' => $sessionId,
-            'remaining_runs' => $this->userSettings->getRemainingRuns($userId),
-        ];
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function buildKnowledgeBaseContext(string $message, int $workspaceId): array
-    {
-        $embeddings = $this->embedder->embed([$message]);
-        $context = [];
-
-        if ($embeddings !== null && !empty($embeddings[0])) {
-            $context = $this->vectorSearch->search($embeddings[0], 3, $workspaceId);
-        }
-
-        if (empty($context)) {
-            $docs = $this->queryFactory->create()->table('knowledge_documents')
-                ->where('workspace_id', '=', $workspaceId)
-                ->limit(3)
-                ->get();
-
-            foreach ($docs as $doc) {
-                $context[] = [
-                    'original_name' => $doc['original_name'],
-                    'chunk_text' => substr($doc['raw_text'], 0, 2000),
-                ];
-            }
-        }
-
-        return $context;
-    }
-
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function buildGscContext(int $userId): ?array
-    {
-        $settings = $this->userSettings->getOrCreate($userId);
-        if (empty($settings['gsc_refresh_token'])) {
-            return null;
-        }
-
-        $tokens = $this->gscService->refreshToken($settings['gsc_refresh_token']);
-        if ($tokens === null || empty($tokens['access_token'])) {
-            return null;
-        }
-
-        $sites = $this->gscService->listSites($tokens['access_token']);
-        if (empty($sites[0]['siteUrl'])) {
-            return null;
-        }
-
-        $data = $this->gscService->getSearchAnalytics(
-            $tokens['access_token'],
-            $sites[0]['siteUrl'],
-            date('Y-m-d', strtotime('-30 days')),
-            date('Y-m-d')
-        );
-
-        if (empty($data)) {
-            return null;
-        }
-
-        $gscText = "Google Search Console Data (last 30 days):\n";
-        foreach (array_slice($data, 0, 10) as $row) {
-            $query = $row['keys'][0] ?? 'unknown';
-            $clicks = $row['clicks'] ?? 0;
-            $impressions = $row['impressions'] ?? 0;
-            $ctr = round(($row['ctr'] ?? 0) * 100, 2);
-            $position = round($row['position'] ?? 0, 1);
-            $gscText .= "- Query: '{$query}' | Clicks: {$clicks} | Impressions: {$impressions} | CTR: {$ctr}% | Position: {$position}\n";
-        }
-
-        return [
-            'original_name' => 'Google Search Console',
-            'chunk_text' => $gscText,
+            'remaining_runs' => $this->usageQuota->remaining($userId),
         ];
     }
 

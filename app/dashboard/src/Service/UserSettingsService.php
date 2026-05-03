@@ -4,107 +4,58 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Service;
 
-use Marko\Database\Query\QueryBuilderFactoryInterface;
-
+/**
+ * Backward-compatible facade over the split settings modules.
+ * New code should inject UsageQuota, ApiKeyResolver, or AgentPromptRegistry directly.
+ *
+ * @deprecated Use UsageQuota, ApiKeyResolver, or AgentPromptRegistry instead.
+ */
 class UserSettingsService
 {
     public function __construct(
-        private readonly QueryBuilderFactoryInterface $queryFactory,
+        private readonly UsageQuota $usageQuota,
+        private readonly ApiKeyResolver $apiKeyResolver,
+        private readonly AgentPromptRegistry $promptRegistry,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getOrCreate(int $userId): array
     {
-        $settings = $this->queryFactory->create()->table('user_settings')
-            ->where('user_id', '=', $userId)
-            ->first();
-
-        if ($settings === null) {
-            $this->queryFactory->create()->table('user_settings')->insert([
-                'user_id' => $userId,
-                'tier' => 'free',
-                'daily_runs_used' => 0,
-                'runs_reset_at' => gmdate('Y-m-d H:i:s'),
-            ]);
-
-            $settings = $this->queryFactory->create()->table('user_settings')
-                ->where('user_id', '=', $userId)
-                ->first();
-        }
-
-        $resetAt = $settings['runs_reset_at'] ?? null;
-        if ($resetAt === null || gmdate('Y-m-d', strtotime($resetAt . ' UTC')) !== gmdate('Y-m-d')) {
-            $this->queryFactory->create()->table('user_settings')
-                ->where('user_id', '=', $userId)
-                ->update([
-                    'daily_runs_used' => 0,
-                    'runs_reset_at' => gmdate('Y-m-d H:i:s'),
-                ]);
-            $settings['daily_runs_used'] = 0;
-        }
-
-        return $settings;
+        return $this->usageQuota->getOrCreate($userId);
     }
 
     public function incrementRunCount(int $userId): void
     {
-        $settings = $this->getOrCreate($userId);
-
-        if ($settings['tier'] !== 'pro' && (int) $settings['daily_runs_used'] >= 10) {
-            throw new \RuntimeException('Rate limit exceeded.');
-        }
-
-        $this->queryFactory->create()->table('user_settings')
-            ->where('user_id', '=', $userId)
-            ->update([
-                'daily_runs_used' => (int) $settings['daily_runs_used'] + 1,
-            ]);
+        $this->usageQuota->recordRun($userId);
     }
 
     public function canRunAgent(int $userId): bool
     {
-        $settings = $this->getOrCreate($userId);
-
-        if ($settings['tier'] === 'pro') {
-            return true;
-        }
-
-        return (int) $settings['daily_runs_used'] < 10;
+        return $this->usageQuota->canRun($userId);
     }
 
     public function getRemainingRuns(int $userId): int
     {
-        $settings = $this->getOrCreate($userId);
-
-        if ($settings['tier'] === 'pro') {
-            return -1;
-        }
-
-        return max(0, 10 - (int) $settings['daily_runs_used']);
+        return $this->usageQuota->remaining($userId);
     }
 
     public function getEffectiveApiKey(int $userId): string
     {
-        $settings = $this->getOrCreate($userId);
-
-        if ($settings['tier'] === 'pro' && !empty($settings['openrouter_api_key'])) {
-            return $settings['openrouter_api_key'];
-        }
-
-        return $_ENV['OPENROUTER_API_KEY'] ?? '';
+        return $this->apiKeyResolver->resolve($userId);
     }
 
     public function updateCustomPrompts(int $userId, array $prompts): void
     {
-        $this->queryFactory->create()->table('user_settings')
-            ->where('user_id', '=', $userId)
-            ->update([
-                'custom_prompts' => json_encode($prompts),
-            ]);
+        $this->promptRegistry->set($userId, $prompts);
     }
 
+    /**
+     * @return array<string, string>
+     */
     public function getCustomPrompts(int $userId): array
     {
-        $settings = $this->getOrCreate($userId);
-        return json_decode($settings['custom_prompts'] ?? '{}', true);
+        return $this->promptRegistry->all($userId);
     }
 }

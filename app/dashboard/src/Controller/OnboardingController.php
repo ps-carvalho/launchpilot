@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace App\Dashboard\Controller;
 
 use App\Dashboard\Authorization\WorkspaceAuthorization;
+use App\Dashboard\Context\UserContext;
+use App\Dashboard\Flow\OnboardingFlow;
 use App\Dashboard\Http\RequestBodyParser;
-use App\Dashboard\Service\KnowledgeBaseService;
-use App\Dashboard\Service\WebsiteScraper;
-use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Inertia\Inertia;
@@ -26,10 +25,9 @@ class OnboardingController
 {
     public function __construct(
         private readonly Inertia $inertia,
-        private readonly AuthManager $auth,
+        private readonly UserContext $userContext,
         private readonly QueryBuilderFactoryInterface $queryFactory,
-        private readonly WebsiteScraper $scraper,
-        private readonly KnowledgeBaseService $kbService,
+        private readonly OnboardingFlow $onboardingFlow,
         private readonly WorkspaceAuthorization $workspaceAuth,
         private readonly SessionInterface $session,
         private readonly RequestBodyParser $bodyParser,
@@ -61,39 +59,12 @@ class OnboardingController
             return Response::redirect('/onboarding');
         }
 
-        $data = $this->scraper->scrape($url);
+        $result = $this->onboardingFlow->complete($this->userContext->id(), $url);
 
-        if ($data === null) {
-            $this->session->flash()->add('error', 'Could not scrape that URL. Please check the address and try again.');
+        if (!$result['success']) {
+            $this->session->flash()->add('error', $result['error']);
             return Response::redirect('/onboarding');
         }
-
-        $workspace = $this->workspaceAuth->firstWorkspaceFor($this->auth->id() ?? 0);
-
-        if ($workspace === null) {
-            $this->session->flash()->add('error', 'No workspace found.');
-            return Response::redirect('/onboarding');
-        }
-
-        $rawText = implode("\n\n", array_filter([
-            $data['title'] ? "Title: {$data['title']}" : null,
-            $data['description'] ? "Description: {$data['description']}" : null,
-            $data['body'] ? "Content:\n{$data['body']}" : null,
-        ]));
-
-        $documentId = $this->queryFactory->create()->table('knowledge_documents')->insert([
-            'workspace_id' => $workspace['id'],
-            'source_url' => $url,
-            'original_name' => parse_url($url, PHP_URL_HOST) ?: $url,
-            'raw_text' => $rawText,
-            'metadata' => json_encode([
-                'title' => $data['title'],
-                'description' => $data['description'],
-                'source' => 'website_scrape',
-            ]),
-        ]);
-
-        $this->kbService->processScrapedDocument($documentId);
 
         $this->session->flash()->add('success', 'Website added to your knowledge base!');
 
@@ -102,7 +73,7 @@ class OnboardingController
 
     private function hasCompletedOnboarding(): bool
     {
-        $userId = $this->auth->id() ?? 0;
+        $userId = $this->userContext->id();
         $workspace = $this->workspaceAuth->firstWorkspaceFor($userId);
 
         if ($workspace === null) {

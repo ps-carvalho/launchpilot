@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
+use App\Dashboard\Context\UserContext;
 use App\Dashboard\Http\RequestBodyParser;
 use App\Dashboard\Pipeline\AgentPipeline;
-use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Inertia\Middleware\InertiaMiddleware;
@@ -21,7 +21,7 @@ use Marko\Session\Middleware\SessionMiddleware;
 class AgentController
 {
     public function __construct(
-        private readonly AuthManager $auth,
+        private readonly UserContext $userContext,
         private readonly QueryBuilderFactoryInterface $queryFactory,
         private readonly AgentPipeline $agentPipeline,
         private readonly RequestBodyParser $bodyParser,
@@ -30,7 +30,7 @@ class AgentController
     #[Get('/api/campaigns/{campaignId}/agents/{agentType}/session')]
     public function getSession(int $campaignId, string $agentType): Response
     {
-        $userId = $this->auth->id() ?? 0;
+        $userId = $this->userContext->id();
 
         $session = $this->queryFactory->create()->table('agent_sessions')
             ->where('campaign_id', '=', $campaignId)
@@ -58,7 +58,7 @@ class AgentController
     #[Post('/api/campaigns/{campaignId}/agents/{agentType}/chat')]
     public function chat(Request $request, int $campaignId, string $agentType): Response
     {
-        $userId = $this->auth->id() ?? 0;
+        $userId = $this->userContext->id();
         $message = $this->bodyParser->get($request, 'message');
 
         if (empty($message)) {
@@ -82,7 +82,7 @@ class AgentController
     #[Post('/api/campaigns/{campaignId}/agents/{agentType}/save')]
     public function saveToCampaign(Request $request, int $campaignId, string $agentType): Response
     {
-        $userId = $this->auth->id() ?? 0;
+        $userId = $this->userContext->id();
         $content = $this->bodyParser->get($request, 'content');
         $platform = $this->bodyParser->get($request, 'platform');
 

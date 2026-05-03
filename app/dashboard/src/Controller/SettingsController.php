@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Dashboard\Controller;
 
 use App\Dashboard\Authorization\WorkspaceAuthorization;
+use App\Dashboard\Context\UserContext;
 use App\Dashboard\Http\RequestBodyParser;
+use App\Dashboard\Service\AgentPromptRegistry;
+use App\Dashboard\Service\ApiKeyResolver;
 use App\Dashboard\Service\ExportService;
 use App\Dashboard\Service\GoogleSearchConsoleService;
-use App\Dashboard\Service\UserSettingsService;
-use Marko\Authentication\AuthManager;
+use App\Dashboard\Service\UsageQuota;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Inertia\Inertia;
@@ -27,9 +29,11 @@ class SettingsController
 {
     public function __construct(
         private readonly Inertia $inertia,
-        private readonly AuthManager $auth,
+        private readonly UserContext $userContext,
         private readonly QueryBuilderFactoryInterface $queryFactory,
-        private readonly UserSettingsService $userSettings,
+        private readonly UsageQuota $usageQuota,
+        private readonly ApiKeyResolver $apiKeyResolver,
+        private readonly AgentPromptRegistry $promptRegistry,
         private readonly GoogleSearchConsoleService $gscService,
         private readonly ExportService $exportService,
         private readonly WorkspaceAuthorization $workspaceAuth,
@@ -40,17 +44,17 @@ class SettingsController
     #[Get('/settings')]
     public function index(Request $request): Response
     {
-        $userId = $this->auth->id() ?? 0;
-        $settings = $this->userSettings->getOrCreate($userId);
+        $userId = $this->userContext->id();
+        $settings = $this->usageQuota->getOrCreate($userId);
 
         return $this->inertia->render($request, 'Settings/Index', [
             'settings' => [
                 'tier' => $settings['tier'],
                 'daily_runs_used' => $settings['daily_runs_used'],
-                'remaining_runs' => $this->userSettings->getRemainingRuns($userId),
+                'remaining_runs' => $this->usageQuota->remaining($userId),
                 'has_gsc' => !empty($settings['gsc_refresh_token']),
                 'gsc_connected_at' => $settings['gsc_connected_at'],
-                'has_custom_api_key' => !empty($settings['openrouter_api_key']),
+                'has_custom_api_key' => $this->apiKeyResolver->hasCustomKey($userId),
             ],
             'gsc_configured' => $this->gscService->isConfigured(),
         ]);
@@ -93,8 +97,8 @@ class SettingsController
             return Response::redirect('/settings');
         }
 
-        $userId = $this->auth->id() ?? 0;
-        $this->userSettings->getOrCreate($userId);
+        $userId = $this->userContext->id();
+        $this->usageQuota->getOrCreate($userId);
 
         $this->queryFactory->create()->table('user_settings')
             ->where('user_id', '=', $userId)
@@ -110,7 +114,7 @@ class SettingsController
     #[Post('/settings/gsc/disconnect')]
     public function disconnectGsc(): Response
     {
-        $userId = $this->auth->id() ?? 0;
+        $userId = $this->userContext->id();
         $this->queryFactory->create()->table('user_settings')
             ->where('user_id', '=', $userId)
             ->update([
@@ -125,8 +129,8 @@ class SettingsController
     #[Post('/settings/api-key')]
     public function updateApiKey(Request $request): Response
     {
-        $userId = $this->auth->id() ?? 0;
-        $settings = $this->userSettings->getOrCreate($userId);
+        $userId = $this->userContext->id();
+        $settings = $this->usageQuota->getOrCreate($userId);
 
         if ($settings['tier'] !== 'pro') {
             return Response::json(['error' => 'Premium feature. Upgrade to Pro.'], 403);
@@ -145,15 +149,15 @@ class SettingsController
     #[Post('/settings/custom-prompts')]
     public function updateCustomPrompts(Request $request): Response
     {
-        $userId = $this->auth->id() ?? 0;
-        $settings = $this->userSettings->getOrCreate($userId);
+        $userId = $this->userContext->id();
+        $settings = $this->usageQuota->getOrCreate($userId);
 
         if ($settings['tier'] !== 'pro') {
             return Response::json(['error' => 'Premium feature. Upgrade to Pro.'], 403);
         }
 
         $prompts = $this->bodyParser->get($request, 'prompts', []);
-        $this->userSettings->updateCustomPrompts($userId, $prompts);
+        $this->promptRegistry->set($userId, $prompts);
 
         return Response::json(['success' => true]);
     }
@@ -161,8 +165,8 @@ class SettingsController
     #[Get('/api/gsc/data')]
     public function gscData(): Response
     {
-        $userId = $this->auth->id() ?? 0;
-        $settings = $this->userSettings->getOrCreate($userId);
+        $userId = $this->userContext->id();
+        $settings = $this->usageQuota->getOrCreate($userId);
 
         if (empty($settings['gsc_refresh_token'])) {
             return Response::json(['error' => 'GSC not connected.'], 400);
@@ -202,7 +206,7 @@ class SettingsController
     #[Get('/settings/export')]
     public function export(): Response
     {
-        $userId = $this->auth->id() ?? 0;
+        $userId = $this->userContext->id();
         $workspace = $this->workspaceAuth->firstWorkspaceFor($userId);
 
         if ($workspace === null) {

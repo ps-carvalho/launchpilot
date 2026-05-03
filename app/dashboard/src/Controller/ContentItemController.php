@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
-use App\Dashboard\Authorization\WorkspaceAuthorization;
+use App\Dashboard\Context\UserContext;
+use App\Dashboard\Gate\ContentItemGate;
 use App\Dashboard\Http\RequestBodyParser;
-use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Inertia\Middleware\InertiaMiddleware;
@@ -28,9 +28,9 @@ class ContentItemController
     ];
 
     public function __construct(
-        private readonly AuthManager $auth,
+        private readonly UserContext $userContext,
         private readonly QueryBuilderFactoryInterface $queryFactory,
-        private readonly WorkspaceAuthorization $workspaceAuth,
+        private readonly ContentItemGate $itemGate,
         private readonly RequestBodyParser $bodyParser,
     ) {}
 
@@ -43,7 +43,7 @@ class ContentItemController
             return Response::json(['error' => 'Invalid status.'], 422);
         }
 
-        $item = $this->workspaceAuth->contentItemFor($this->auth->id() ?? 0, $id);
+        $item = $this->itemGate->itemForUser($this->userContext->id(), $id);
         if ($item === null) {
             return Response::json(['error' => 'Not found.'], 404);
         }
@@ -75,7 +75,7 @@ class ContentItemController
             return Response::json(['error' => 'Content is required.'], 422);
         }
 
-        $item = $this->workspaceAuth->contentItemFor($this->auth->id() ?? 0, $id);
+        $item = $this->itemGate->itemForUser($this->userContext->id(), $id);
         if ($item === null) {
             return Response::json(['error' => 'Not found.'], 404);
         }

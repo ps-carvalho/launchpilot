@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
-use App\Dashboard\Authorization\WorkspaceAuthorization;
+use App\Dashboard\Context\UserContext;
+use App\Dashboard\Gate\KnowledgeBaseGate;
+use App\Dashboard\Repository\KnowledgeBaseRepository;
+use App\Dashboard\Service\EmbeddingService;
 use App\Dashboard\Service\KnowledgeBaseService;
-use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Inertia\Inertia;
@@ -24,29 +26,22 @@ class KnowledgeBaseController
 {
     public function __construct(
         private readonly Inertia $inertia,
-        private readonly AuthManager $auth,
+        private readonly UserContext $userContext,
         private readonly QueryBuilderFactoryInterface $queryFactory,
         private readonly KnowledgeBaseService $kbService,
-        private readonly WorkspaceAuthorization $workspaceAuth,
+        private readonly KnowledgeBaseGate $kbGate,
         private readonly SessionInterface $session,
-        private readonly \App\Dashboard\Service\VectorSearchService $vectorSearch,
-        private readonly \App\Dashboard\Service\EmbeddingService $embedder,
+        private readonly KnowledgeBaseRepository $kbRepo,
+        private readonly EmbeddingService $embedder,
     ) {}
 
     #[Get('/knowledge-base')]
     public function index(Request $request): Response
     {
-        $userId = $this->auth->id() ?? 0;
-        $workspace = $this->workspaceAuth->firstWorkspaceFor($userId);
+        $userId = $this->userContext->id();
 
-        $documents = [];
-
-        if ($workspace !== null) {
-            $documents = $this->queryFactory->create()->table('knowledge_documents')
-                ->where('workspace_id', '=', $workspace['id'])
-                ->orderBy('created_at', 'DESC')
-                ->get();
-        }
+        $documents = $this->kbGate->documentsForUser($userId);
+        $workspace = $this->kbGate->firstWorkspaceForUser($userId);
 
         return $this->inertia->render($request, 'KnowledgeBase/Index', [
             'documents' => $documents,
@@ -57,7 +52,7 @@ class KnowledgeBaseController
     #[Get('/knowledge-base/{id}')]
     public function show(Request $request, int $id): Response
     {
-        $document = $this->workspaceAuth->documentFor($this->auth->id() ?? 0, $id);
+        $document = $this->kbGate->documentForUser($this->userContext->id(), $id);
 
         if ($document === null) {
             return Response::redirect('/knowledge-base');
@@ -73,8 +68,8 @@ class KnowledgeBaseController
     #[Post('/knowledge-base/upload')]
     public function upload(Request $request): Response
     {
-        $userId = $this->auth->id() ?? 0;
-        $workspace = $this->workspaceAuth->firstWorkspaceFor($userId);
+        $userId = $this->userContext->id();
+        $workspace = $this->kbGate->firstWorkspaceForUser($userId);
 
         if ($workspace === null) {
             $this->session->flash()->add('error', 'No workspace found.');
@@ -129,8 +124,8 @@ class KnowledgeBaseController
             return Response::json(['error' => 'Query is required.', 'results' => []], 422);
         }
 
-        $userId = $this->auth->id() ?? 0;
-        $workspace = $this->workspaceAuth->firstWorkspaceFor($userId);
+        $userId = $this->userContext->id();
+        $workspace = $this->kbGate->firstWorkspaceForUser($userId);
 
         if ($workspace === null) {
             return Response::json(['error' => 'No workspace found.', 'results' => []], 404);
@@ -145,7 +140,7 @@ class KnowledgeBaseController
             ]);
         }
 
-        $results = $this->vectorSearch->search($embeddings[0], 5, (int) $workspace['id']);
+        $results = $this->kbRepo->findSimilarChunks($embeddings[0], (int) $workspace['id'], 5);
 
         return Response::json(['results' => $results]);
     }
@@ -153,7 +148,7 @@ class KnowledgeBaseController
     #[Post('/knowledge-base/{id}/delete')]
     public function delete(int $id): Response
     {
-        $document = $this->workspaceAuth->documentFor($this->auth->id() ?? 0, $id);
+        $document = $this->kbGate->documentForUser($this->userContext->id(), $id);
 
         if ($document === null) {
             return Response::redirect('/knowledge-base');

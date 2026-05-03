@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Dashboard\Controller;
 
 use App\Dashboard\Authorization\WorkspaceAuthorization;
-use App\Dashboard\Service\UserSettingsService;
-use Marko\Authentication\AuthManager;
+use App\Dashboard\Context\UserContext;
+use App\Dashboard\Service\UsageQuota;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Inertia\Inertia;
@@ -22,16 +22,16 @@ class DashboardController
 {
     public function __construct(
         private readonly Inertia $inertia,
-        private readonly AuthManager $auth,
+        private readonly UserContext $userContext,
         private readonly QueryBuilderFactoryInterface $queryFactory,
-        private readonly UserSettingsService $userSettings,
+        private readonly UsageQuota $usageQuota,
         private readonly WorkspaceAuthorization $workspaceAuth,
     ) {}
 
     #[Get('/dashboard')]
     public function index(Request $request): Response
     {
-        $userId = $this->auth->id() ?? 0;
+        $userId = $this->userContext->id();
         $userRow = $this->queryFactory->create()->table('users')->where('id', '=', $userId)->first();
 
         $workspaces = $this->workspaceAuth->workspacesFor($userId);
@@ -65,8 +65,8 @@ class DashboardController
             'documents' => $documents,
             'hasCompletedOnboarding' => $hasCompletedOnboarding,
             'usage' => [
-                'remaining' => $this->userSettings->getRemainingRuns($userId),
-                'tier' => $this->userSettings->getOrCreate($userId)['tier'] ?? 'free',
+                'remaining' => $this->usageQuota->remaining($userId),
+                'tier' => $this->usageQuota->tier($userId),
             ],
         ]);
     }

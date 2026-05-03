@@ -3,13 +3,19 @@
 declare(strict_types=1);
 
 use App\Dashboard\Authorization\WorkspaceAuthorization;
+use App\Dashboard\Context\Builder\ContextBuilderRegistry;
+use App\Dashboard\Context\Builder\GscContextBuilder;
+use App\Dashboard\Context\Builder\KnowledgeBaseContextBuilder;
+use App\Dashboard\Gate\CampaignGate;
 use App\Dashboard\Http\HttpClientInterface;
 use App\Dashboard\Pipeline\AgentPipeline;
+use App\Dashboard\Repository\KnowledgeBaseRepository;
 use App\Dashboard\Service\AgentChatService;
+use App\Dashboard\Service\AgentPromptRegistry;
+use App\Dashboard\Service\ApiKeyResolver;
 use App\Dashboard\Service\EmbeddingService;
 use App\Dashboard\Service\GoogleSearchConsoleService;
-use App\Dashboard\Service\UserSettingsService;
-use App\Dashboard\Service\VectorSearchService;
+use App\Dashboard\Service\UsageQuota;
 use Tests\FakeHttpClient;
 
 beforeEach(function () {
@@ -19,21 +25,29 @@ beforeEach(function () {
     $this->container()->instance(HttpClientInterface::class, $this->fakeHttp);
 
     // Re-instantiate services that depend on HttpClientInterface
-    $userSettings = new UserSettingsService($this->query());
-    $chatService = new AgentChatService($userSettings, $this->fakeHttp);
+    $apiKeyResolver = new ApiKeyResolver($this->query());
+    $promptRegistry = new AgentPromptRegistry($this->query());
+    $chatService = new AgentChatService($apiKeyResolver, $promptRegistry, $this->fakeHttp);
     $embedder = new EmbeddingService($this->fakeHttp);
-    $vectorSearch = new VectorSearchService($this->query());
-    $workspaceAuth = new WorkspaceAuthorization($this->query());
+    $kbRepo = new KnowledgeBaseRepository($this->query());
+    $kbBuilder = new KnowledgeBaseContextBuilder($embedder, $kbRepo);
     $gscService = new GoogleSearchConsoleService($this->fakeHttp);
+    $gscBuilder = new GscContextBuilder($this->query(), $gscService);
+
+    $registry = new ContextBuilderRegistry();
+    $registry->register($kbBuilder);
+    $registry->register($gscBuilder);
+
+    $usageQuota = new UsageQuota($this->query());
+    $workspaceAuth = new WorkspaceAuthorization($this->query());
+    $campaignGate = new CampaignGate($this->query(), $workspaceAuth);
 
     $this->pipeline = new AgentPipeline(
         $this->query(),
         $chatService,
-        $vectorSearch,
-        $embedder,
-        $userSettings,
-        $gscService,
-        $workspaceAuth,
+        $registry,
+        $usageQuota,
+        $campaignGate,
     );
 
     // Set a valid API key so we don't hit the "not configured" path

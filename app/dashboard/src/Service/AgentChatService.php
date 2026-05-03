@@ -9,7 +9,8 @@ use App\Dashboard\Http\HttpClientInterface;
 class AgentChatService
 {
     public function __construct(
-        private readonly UserSettingsService $userSettings,
+        private readonly ApiKeyResolver $apiKeyResolver,
+        private readonly AgentPromptRegistry $promptRegistry,
         private readonly HttpClientInterface $http,
     ) {}
 
@@ -20,7 +21,7 @@ class AgentChatService
      */
     public function chat(int $userId, string $agentType, string $userMessage, array $history, array $kbContext): ?array
     {
-        $apiKey = $this->userSettings->getEffectiveApiKey($userId);
+        $apiKey = $this->apiKeyResolver->resolve($userId);
 
         if (empty($apiKey) || $apiKey === 'sk-or-v1-REPLACE_ME') {
             return [
@@ -84,13 +85,12 @@ class AgentChatService
      */
     private function buildSystemPrompt(int $userId, string $agentType, array $kbContext): string
     {
-        $customPrompts = $this->userSettings->getCustomPrompts($userId);
-        if (!empty($customPrompts[$agentType])) {
-            $kbText = $this->formatKbContext($kbContext);
-            return $customPrompts[$agentType] . "\n\nBUSINESS CONTEXT:\n" . $kbText;
-        }
-
+        $customPrompt = $this->promptRegistry->get($userId, $agentType);
         $kbText = $this->formatKbContext($kbContext);
+
+        if ($customPrompt !== null) {
+            return $customPrompt . "\n\nBUSINESS CONTEXT:\n" . $kbText;
+        }
 
         $prompts = [
             'social' => "You are a Social Media Marketing Agent for LaunchPilot. Your job is to write engaging, platform-appropriate social media posts based on the user's business context.\n\nBUSINESS CONTEXT:\n{$kbText}\n\nInstructions:\n- Write short, punchy, engaging posts\n- Match the tone to the platform (LinkedIn = professional, Facebook = friendly, general = adaptable)\n- Include relevant hashtags when appropriate\n- Always provide the post text ready to copy-paste\n- If the user asks for multiple posts, number them clearly",

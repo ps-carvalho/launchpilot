@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
-use App\Dashboard\Authorization\WorkspaceAuthorization;
+use App\Dashboard\Context\UserContext;
+use App\Dashboard\Gate\CampaignGate;
 use App\Dashboard\Http\RequestBodyParser;
 use App\Dashboard\Service\ExportService;
-use App\Dashboard\Service\UserSettingsService;
-use Marko\Authentication\AuthManager;
+use App\Dashboard\Service\UsageQuota;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Inertia\Inertia;
@@ -28,37 +28,23 @@ class CampaignController
 
     public function __construct(
         private readonly Inertia $inertia,
-        private readonly AuthManager $auth,
+        private readonly UserContext $userContext,
         private readonly QueryBuilderFactoryInterface $queryFactory,
-        private readonly WorkspaceAuthorization $workspaceAuth,
+        private readonly CampaignGate $campaignGate,
         private readonly RequestBodyParser $bodyParser,
-        private readonly UserSettingsService $userSettings,
+        private readonly UsageQuota $usageQuota,
         private readonly ExportService $exportService,
     ) {}
 
     #[Get('/campaigns')]
     public function index(Request $request): Response
     {
-        $userId = $this->auth->id() ?? 0;
-        $workspaceIds = $this->workspaceAuth->workspaceIdsFor($userId);
-
+        $userId = $this->userContext->id();
         $tab = $request->query('tab') ?? 'active';
         $filter = in_array($tab, ['active', 'archived'], true) ? $tab : 'active';
 
-        $campaigns = [];
-
-        if (!empty($workspaceIds)) {
-            $query = $this->queryFactory->create()->table('campaigns')
-                ->whereIn('workspace_id', $workspaceIds);
-
-            if ($filter === 'archived') {
-                $query->whereNotNull('archived_at');
-            } else {
-                $query->whereNull('archived_at');
-            }
-
-            $campaigns = $query->orderBy('created_at', 'DESC')->get();
-        }
+        $archived = $filter === 'archived' ? true : false;
+        $campaigns = $this->campaignGate->campaignsForUser($userId, null, $archived);
 
         return $this->inertia->render($request, 'Campaign/Index', [
             'campaigns' => $campaigns,
@@ -69,8 +55,8 @@ class CampaignController
     #[Get('/campaigns/create')]
     public function create(Request $request): Response
     {
-        $userId = $this->auth->id() ?? 0;
-        $workspaces = $this->workspaceAuth->workspacesFor($userId);
+        $userId = $this->userContext->id();
+        $workspaces = $this->campaignGate->workspacesForUser($userId);
 
         if (empty($workspaces)) {
             return Response::redirect('/dashboard');
@@ -84,9 +70,9 @@ class CampaignController
     #[Get('/campaigns/{id}')]
     public function show(Request $request, int $id): Response
     {
-        $userId = $this->auth->id() ?? 0;
+        $userId = $this->userContext->id();
 
-        $campaign = $this->workspaceAuth->campaignFor($userId, $id);
+        $campaign = $this->campaignGate->forUser($userId, $id);
 
         if ($campaign === null) {
             return Response::redirect('/campaigns');
@@ -103,7 +89,7 @@ class CampaignController
             ->orderBy('updated_at', 'DESC')
             ->get();
 
-        $remainingRuns = $this->userSettings->getRemainingRuns($userId);
+        $remainingRuns = $this->usageQuota->remaining($userId);
 
         return $this->inertia->render($request, 'Campaign/Show', [
             'campaign' => $campaign,
@@ -116,9 +102,9 @@ class CampaignController
     #[Get('/campaigns/{id}/export')]
     public function export(int $id): Response
     {
-        $userId = $this->auth->id() ?? 0;
+        $userId = $this->userContext->id();
 
-        $campaign = $this->workspaceAuth->campaignFor($userId, $id);
+        $campaign = $this->campaignGate->forUser($userId, $id);
         if ($campaign === null) {
             return Response::redirect('/campaigns');
         }
@@ -139,10 +125,10 @@ class CampaignController
     #[Post('/campaigns')]
     public function store(Request $request): Response
     {
-        $userId = $this->auth->id() ?? 0;
+        $userId = $this->userContext->id();
         $workspaceId = (int) $this->bodyParser->get($request, 'workspace_id');
 
-        $workspaceIds = $this->workspaceAuth->workspaceIdsFor($userId);
+        $workspaceIds = $this->campaignGate->workspaceIdsForUser($userId);
         if (!in_array($workspaceId, $workspaceIds, true)) {
             return Response::json(['error' => 'Invalid workspace.'], 403);
         }
@@ -188,9 +174,9 @@ class CampaignController
     #[Post('/campaigns/{id}')]
     public function update(Request $request, int $id): Response
     {
-        $userId = $this->auth->id() ?? 0;
+        $userId = $this->userContext->id();
 
-        $campaign = $this->workspaceAuth->campaignFor($userId, $id);
+        $campaign = $this->campaignGate->forUser($userId, $id);
         if ($campaign === null) {
             return Response::json(['error' => 'Not found.'], 404);
         }
@@ -245,9 +231,9 @@ class CampaignController
     #[Post('/campaigns/{id}/archive')]
     public function archive(Request $request, int $id): Response
     {
-        $userId = $this->auth->id() ?? 0;
+        $userId = $this->userContext->id();
 
-        $campaign = $this->workspaceAuth->campaignFor($userId, $id);
+        $campaign = $this->campaignGate->forUser($userId, $id);
         if ($campaign === null) {
             return Response::json(['error' => 'Not found.'], 404);
         }
@@ -262,9 +248,9 @@ class CampaignController
     #[Post('/campaigns/{id}/restore')]
     public function restore(Request $request, int $id): Response
     {
-        $userId = $this->auth->id() ?? 0;
+        $userId = $this->userContext->id();
 
-        $campaign = $this->workspaceAuth->campaignFor($userId, $id);
+        $campaign = $this->campaignGate->forUser($userId, $id);
         if ($campaign === null) {
             return Response::json(['error' => 'Not found.'], 404);
         }

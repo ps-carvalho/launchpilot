@@ -1,29 +1,103 @@
-# LaunchPilot AI
+# LaunchPilot AI — Marko Framework Product Demo
 
-AI-driven marketing tool for small businesses and entrepreneurs built with the [Marko PHP Framework](https://marko.build).
+> **A production-grade AI marketing platform built to showcase the [Marko PHP Framework](https://marko.build).**
+>
+> **Collaborations welcome!** If you're exploring Marko, want to contribute, or are building something similar, open an issue or PR.
 
-## Local Development
+LaunchPilot is an AI-driven marketing campaign planner for small businesses and entrepreneurs. It demonstrates how Marko PHP powers sophisticated full-stack applications — from attribute-driven routing and DI container auto-wiring to Inertia.js React frontends with Tailwind CSS.
 
-```bash
-composer install
-./vendor/bin/marko up
+## What It Demonstrates
+
+| Marko Feature | How LaunchPilot Uses It |
+|---|---|
+| **Attribute Routing** | PHP 8 `#[Get('/campaigns')]` and `#[Post('/api/...')]` attributes across 8 controllers |
+| **DI Container** | Constructor auto-wiring for 25+ services; custom module bindings for context builder registry |
+| **Middleware Pipeline** | Session → Auth → Inertia middleware chain on every dashboard route |
+| **Inertia.js Integration** | React 19 SPA with SSR support, Vite HMR, and shared data propagation |
+| **Module System** | Dashboard module (`app/dashboard`) + Web module (`app/web`) with independent bindings |
+| **PostgreSQL + pgvector** | Vector similarity search for RAG-powered AI agents |
+
+## Architecture Highlights
+
+```
+app/dashboard/src/
+├── Context/          # Request-scoped value objects (UserContext)
+├── Controller/       # 8 HTTP controllers using attribute routing
+├── Gate/             # Resource authorization (CampaignGate, KnowledgeBaseGate, ContentItemGate)
+├── Pipeline/         # AgentPipeline with pluggable ContextBuilderRegistry
+├── Repository/       # KnowledgeBaseRepository — deep seam over pgvector
+├── Service/          # Split services: UsageQuota, ApiKeyResolver, AgentPromptRegistry
+├── Flow/             # OnboardingFlow — business rule orchestration
+└── Context/Builder/  # Pluggable agent context builders (KB, GSC)
 ```
 
-Visit http://localhost:8000.
+### Design Decisions
 
-## Current App
+- **Gates over raw authorization queries** — `CampaignGate::forUser()` centralizes ownership checks
+- **Context builders over private pipeline methods** — Adding a new agent context source means registering a builder, not editing the pipeline
+- **Split services over god services** — `UserSettingsService` facade delegates to `UsageQuota`, `ApiKeyResolver`, `AgentPromptRegistry`
+- **Repository over shallow service** — `KnowledgeBaseRepository` replaces `VectorSearchService` with a richer query seam
 
-The first application module lives in `app/marketing`.
+## Features
 
-- `/` renders the product workspace homepage.
-- `/health` returns JSON health data.
-- `/api/strategy` returns the starter product strategy payload.
+- **Campaign Management** — Create, edit, archive, and export marketing campaigns
+- **AI Agent Chat** — 4 agent types (Social, Content, SEO, Brainstorm) with session persistence
+- **Knowledge Base** — Upload TXT/PDF/DOCX, automatic chunking, pgvector similarity search
+- **Content Workflow** — Draft → Approved → Scheduled → Published status transitions
+- **GSC Integration** — Google Search Console OAuth for SEO agent enrichment
+- **Tier System** — Free (10 runs/day) and Pro (unlimited) with BYOK support
 
-## Next Steps
+## Tech Stack
 
-Add modules for business profiles, campaign plans, content generation, and AI provider integration.
+| Layer | Technology |
+|---|---|
+| Framework | Marko PHP 0.5.0 |
+| Frontend | React 19 + Inertia.js + Tailwind CSS v4 + Vite |
+| Database | PostgreSQL 16 with pgvector extension |
+| LLM | OpenRouter API (GPT-4o Mini default) |
+| Auth | Session-based (Marko Authentication) |
+| Testing | Pest PHP 4.0 + Playwright E2E |
 
-## Documentation
+## Getting Started
 
-- [Marko Documentation](https://marko.build/docs/)
-- [Project Structure](https://marko.build/docs/getting-started/project-structure/)
+```bash
+# Install dependencies
+composer install
+npm install
+
+# Start PostgreSQL (Docker)
+docker compose up -d
+
+# Run migrations
+./vendor/bin/marko migrate
+
+# Start dev servers
+./vendor/bin/marko up   # PHP on localhost:8000
+npm run dev             # Vite on localhost:5173
+```
+
+## Testing
+
+```bash
+# PHP unit + integration tests (201 tests, 370 assertions)
+php vendor/bin/pest
+
+# E2E tests with Playwright
+npm run test:e2e
+
+# Build for production
+npm run build
+```
+
+## Collaborate
+
+This project exists to push Marko PHP forward. Contributions in any form are welcome:
+
+- **Bug reports** — Open an issue with reproduction steps
+- **Feature ideas** — Check existing PRDs in `docs/` or propose new ones
+- **Refactors** — The codebase follows a shadow-depth design system; deep architectural improvements are especially valued
+- **Documentation** — Marko needs more real-world examples
+
+## License
+
+MIT
