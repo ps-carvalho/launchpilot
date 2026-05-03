@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Service;
 
+use App\Dashboard\Http\HttpClientInterface;
+
 class AgentChatService
 {
     public function __construct(
         private readonly UserSettingsService $userSettings,
+        private readonly HttpClientInterface $http,
     ) {}
 
     /**
@@ -38,18 +41,33 @@ class AgentChatService
 
         $messages[] = ['role' => 'user', 'content' => $userMessage];
 
-        $response = $this->request($apiKey, [
-            'model' => 'openai/gpt-4o-mini',
-            'messages' => $messages,
-            'temperature' => 0.7,
-            'max_tokens' => 2000,
-        ]);
+        $response = $this->http->post(
+            'https://openrouter.ai/api/v1/chat/completions',
+            json_encode([
+                'model' => 'openai/gpt-4o-mini',
+                'messages' => $messages,
+                'temperature' => 0.7,
+                'max_tokens' => 2000,
+            ]),
+            [
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $apiKey,
+                'HTTP-Referer' => 'https://launchpilot.ai',
+                'X-Title' => 'LaunchPilot',
+            ],
+            60
+        );
 
         if ($response === null) {
             return null;
         }
 
-        $content = $response['choices'][0]['message']['content'] ?? null;
+        $decoded = json_decode($response['body'], true);
+        if (!is_array($decoded)) {
+            return null;
+        }
+
+        $content = $decoded['choices'][0]['message']['content'] ?? null;
 
         if ($content === null) {
             return null;
@@ -66,7 +84,6 @@ class AgentChatService
      */
     private function buildSystemPrompt(int $userId, string $agentType, array $kbContext): string
     {
-        // Check for custom prompt (premium feature)
         $customPrompts = $this->userSettings->getCustomPrompts($userId);
         if (!empty($customPrompts[$agentType])) {
             $kbText = $this->formatKbContext($kbContext);
@@ -99,41 +116,5 @@ class AgentChatService
             $text .= $chunk['chunk_text'] ?? '';
         }
         return $text;
-    }
-
-    /**
-     * @param array<string, mixed> $payload
-     * @return array<string, mixed>|null
-     */
-    private function request(string $apiKey, array $payload): ?array
-    {
-        $json = json_encode($payload);
-        if ($json === false) {
-            return null;
-        }
-
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'POST',
-                'header' => [
-                    'Content-Type: application/json',
-                    'Authorization: Bearer ' . $apiKey,
-                    'HTTP-Referer: https://launchpilot.ai',
-                    'X-Title: LaunchPilot',
-                ],
-                'content' => $json,
-                'timeout' => 60,
-            ],
-        ]);
-
-        $response = @file_get_contents('https://openrouter.ai/api/v1/chat/completions', false, $context);
-
-        if ($response === false) {
-            return null;
-        }
-
-        $decoded = json_decode($response, true);
-
-        return is_array($decoded) ? $decoded : null;
     }
 }

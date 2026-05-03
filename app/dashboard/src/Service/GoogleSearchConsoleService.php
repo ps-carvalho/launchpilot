@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Service;
 
-use Marko\Database\Query\QueryBuilderFactoryInterface;
+use App\Dashboard\Http\HttpClientInterface;
 
 class GoogleSearchConsoleService
 {
@@ -12,7 +12,7 @@ class GoogleSearchConsoleService
     private string $clientSecret;
 
     public function __construct(
-        private readonly QueryBuilderFactoryInterface $queryFactory,
+        private readonly HttpClientInterface $http,
     ) {
         $this->clientId = $_ENV['GOOGLE_CLIENT_ID'] ?? '';
         $this->clientSecret = $_ENV['GOOGLE_CLIENT_SECRET'] ?? '';
@@ -40,27 +40,23 @@ class GoogleSearchConsoleService
 
     public function exchangeCode(string $code, string $redirectUri): ?array
     {
-        $response = $this->httpPost('https://oauth2.googleapis.com/token', [
+        return $this->tokenRequest([
             'code' => $code,
             'client_id' => $this->clientId,
             'client_secret' => $this->clientSecret,
             'redirect_uri' => $redirectUri,
             'grant_type' => 'authorization_code',
         ]);
-
-        return $response;
     }
 
     public function refreshToken(string $refreshToken): ?array
     {
-        $response = $this->httpPost('https://oauth2.googleapis.com/token', [
+        return $this->tokenRequest([
             'refresh_token' => $refreshToken,
             'client_id' => $this->clientId,
             'client_secret' => $this->clientSecret,
             'grant_type' => 'refresh_token',
         ]);
-
-        return $response;
     }
 
     /**
@@ -68,34 +64,25 @@ class GoogleSearchConsoleService
      */
     public function getSearchAnalytics(string $accessToken, string $siteUrl, string $startDate, string $endDate): ?array
     {
-        $payload = [
+        $payload = json_encode([
             'startDate' => $startDate,
             'endDate' => $endDate,
             'dimensions' => ['query'],
             'rowLimit' => 50,
-        ];
+        ]);
 
         $url = 'https://www.googleapis.com/webmasters/v3/sites/' . urlencode($siteUrl) . '/searchAnalytics/query';
 
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'POST',
-                'header' => [
-                    'Content-Type: application/json',
-                    'Authorization: Bearer ' . $accessToken,
-                ],
-                'content' => json_encode($payload),
-                'timeout' => 30,
-            ],
-        ]);
+        $response = $this->http->post($url, $payload, [
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $accessToken,
+        ], 30);
 
-        $response = @file_get_contents($url, false, $context);
-
-        if ($response === false) {
+        if ($response === null) {
             return null;
         }
 
-        $decoded = json_decode($response, true);
+        $decoded = json_decode($response['body'], true);
         return is_array($decoded) ? ($decoded['rows'] ?? []) : null;
     }
 
@@ -104,23 +91,17 @@ class GoogleSearchConsoleService
      */
     public function listSites(string $accessToken): ?array
     {
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'header' => [
-                    'Authorization: Bearer ' . $accessToken,
-                ],
-                'timeout' => 30,
-            ],
-        ]);
+        $response = $this->http->get(
+            'https://www.googleapis.com/webmasters/v3/sites',
+            ['Authorization' => 'Bearer ' . $accessToken],
+            30
+        );
 
-        $response = @file_get_contents('https://www.googleapis.com/webmasters/v3/sites', false, $context);
-
-        if ($response === false) {
+        if ($response === null) {
             return null;
         }
 
-        $decoded = json_decode($response, true);
+        $decoded = json_decode($response['body'], true);
         return is_array($decoded) ? ($decoded['siteEntry'] ?? []) : null;
     }
 
@@ -128,24 +109,20 @@ class GoogleSearchConsoleService
      * @param array<string, mixed> $data
      * @return array<string, mixed>|null
      */
-    private function httpPost(string $url, array $data): ?array
+    private function tokenRequest(array $data): ?array
     {
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'POST',
-                'header' => 'Content-Type: application/x-www-form-urlencoded',
-                'content' => http_build_query($data),
-                'timeout' => 30,
-            ],
-        ]);
+        $response = $this->http->post(
+            'https://oauth2.googleapis.com/token',
+            http_build_query($data),
+            ['Content-Type' => 'application/x-www-form-urlencoded'],
+            30
+        );
 
-        $response = @file_get_contents($url, false, $context);
-
-        if ($response === false) {
+        if ($response === null) {
             return null;
         }
 
-        $decoded = json_decode($response, true);
+        $decoded = json_decode($response['body'], true);
         return is_array($decoded) ? $decoded : null;
     }
 }

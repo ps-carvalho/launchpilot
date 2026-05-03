@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Service;
 
+use App\Dashboard\Http\HttpClientInterface;
+
 class WebsiteScraper
 {
+    public function __construct(
+        private readonly HttpClientInterface $http,
+    ) {}
+
     /**
      * Scrape a website and extract title, meta description, and body text.
      *
@@ -17,11 +23,15 @@ class WebsiteScraper
             $url = 'https://' . $url;
         }
 
-        $html = $this->fetch($url);
+        $response = $this->http->get($url, [
+            'User-Agent' => 'LaunchPilotBot/1.0 (https://launchpilot.ai)',
+        ], 15);
 
-        if ($html === null) {
+        if ($response === null) {
             return null;
         }
+
+        $html = $response['body'];
 
         $dom = new \DOMDocument();
         \libxml_use_internal_errors(true);
@@ -37,26 +47,6 @@ class WebsiteScraper
             'description' => $description,
             'body' => $body,
         ];
-    }
-
-    private function fetch(string $url): ?string
-    {
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 15,
-                'user_agent' => 'LaunchPilotBot/1.0 (https://launchpilot.ai)',
-                'follow_location' => true,
-                'max_redirects' => 3,
-            ],
-            'ssl' => [
-                'verify_peer' => false,
-                'verify_peer_name' => false,
-            ],
-        ]);
-
-        $html = @file_get_contents($url, false, $context);
-
-        return $html !== false ? $html : null;
     }
 
     private function extractTitle(\DOMDocument $dom): string
@@ -96,7 +86,6 @@ class WebsiteScraper
             return '';
         }
 
-        // Remove script and style tags
         $scripts = $body->getElementsByTagName('script');
         while ($scripts->length > 0) {
             $scripts->item(0)->parentNode?->removeChild($scripts->item(0));
@@ -119,11 +108,9 @@ class WebsiteScraper
 
         $text = $this->nodeTextContent($body);
 
-        // Clean up whitespace
         $text = preg_replace('/\s+/', ' ', $text);
         $text = trim($text);
 
-        // Limit to ~10,000 chars to avoid storing massive pages
         if (strlen($text) > 10000) {
             $text = substr($text, 0, 10000) . '...';
         }
