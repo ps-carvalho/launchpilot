@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{$title ?? 'LaunchPilot AI'}</title>
+    <meta name="description" content="AI-driven marketing campaign planning for small businesses and entrepreneurs.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: '#172026',
+                        muted: '#64717d',
+                        line: '#d9e1e8',
+                        paper: '#fbfcfd',
+                        surface: '#ffffff',
+                        green: '#1f8a70',
+                        blue: '#2563eb',
+                        amber: '#b86f08',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-paper text-ink antialiased">
+    <header class="border-b border-line bg-white/90 backdrop-blur">
+        <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4" aria-label="Primary">
+            <a href="/" class="text-lg font-bold tracking-tight">LaunchPilot AI</a>
+            <div class="flex items-center gap-6">
+                <a href="/login" class="text-sm font-semibold text-muted hover:text-ink">Log in</a>
+                <a href="/register" class="rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white hover:bg-ink/90">Get started</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        {block content}{/block}
+    </main>
+
+    <footer class="border-t border-line mt-20">
+        <div class="mx-auto max-w-6xl px-6 py-8 text-sm text-muted">
+            &copy; {=date('Y')} LaunchPilot AI. Built for owner-led businesses.
+        </div>
+    </footer>
+</body>
+</html>

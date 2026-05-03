@@ -1,0 +1,98 @@
+{
+    "id": "9dc302d44907f61c",
+    "stored_at": "2026-05-03T11:53:34+00:00",
+    "profiler_url": "/_debugbar/9dc302d44907f61c",
+    "summary": {
+        "duration_ms": 3.49,
+        "memory": "2 MB",
+        "messages": 0,
+        "queries": 0,
+        "logs": 0,
+        "views": 1,
+        "method": "GET",
+        "uri": "/login"
+    },
+    "collectors": {
+        "messages": {
+            "label": "Messages",
+            "badge": 0,
+            "messages": []
+        },
+        "time": {
+            "label": "Time",
+            "badge": "3.46 ms",
+            "duration_ms": 3.46,
+            "measures": []
+        },
+        "memory": {
+            "label": "Memory",
+            "badge": "2 MB",
+            "start_bytes": 2097152,
+            "current_bytes": 2097152,
+            "peak_bytes": 2097152,
+            "current": "2 MB",
+            "peak": "2 MB"
+        },
+        "request": {
+            "label": "Request",
+            "badge": "GET",
+            "method": "GET",
+            "uri": "/login",
+            "query": [],
+            "post": [],
+            "headers": {
+                "Host": "localhost:8000",
+                "User-Agent": "curl/8.7.1",
+                "Accept": "*/*"
+            }
+        },
+        "database": {
+            "label": "Database",
+            "badge": 0,
+            "count": 0,
+            "duration_ms": 0,
+            "slow_threshold_ms": 100,
+            "queries": []
+        },
+        "logs": {
+            "label": "Logs",
+            "badge": 0,
+            "logs": []
+        },
+        "views": {
+            "label": "Views",
+            "badge": "1",
+            "count": 1,
+            "duration_ms": 0.27,
+            "renders": [
+                {
+                    "method": "render",
+                    "template": "auth/login",
+                    "data_keys": [
+                        "csrf_token",
+                        "flash"
+                    ],
+                    "start_ms": 2.95,
+                    "duration_ms": 0.27,
+                    "output_size": 3370
+                }
+            ]
+        },
+        "response": {
+            "label": "Response",
+            "badge": "html",
+            "status": 200,
+            "body_type": "html",
+            "body_size": 3370,
+            "headers": [
+                "X-Powered-By: PHP/8.5.5",
+                "Set-Cookie: marko_session=1eeeec49dfcd1b3a8e8079afc2cfce06; expires=Sun, 03 May 2026 13:53:34 GMT; Max-Age=7200; path=/; HttpOnly; SameSite=Lax",
+                "Expires: Thu, 19 Nov 1981 08:52:00 GMT",
+                "Cache-Control: no-store, no-cache, must-revalidate",
+                "Pragma: no-cache",
+                "Content-Type: text/html; charset=utf-8"
+            ],
+            "preview": "<!doctype html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <title>LaunchPilot AI</title>\n    <meta name=\"description\" content=\"AI-driven marketing campaign planning for small businesses and entrepreneurs.\">\n    <script src=\"https://cdn.tailwindcss.com\"></script>\n    <script>\n        tailwind.config = {\n            theme: {\n                extend: {\n                    colors: {\n                        ink: '#172026',\n                        muted: '#64717d',\n                        line: '#d9e1e8',\n                        paper: '#fbfcfd',\n                        surface: '#ffffff',\n                        green: '#1f8a70',\n                        blue: '#2563eb',\n                        amber: '#b86f08',\n                    }\n                }\n            }\n        }\n    </script>\n</head>\n<body class=\"bg-paper text-ink antialiased\">\n    <header class=\"border-b border-line bg-white/90 backdrop-blur\">\n        <nav class=\"mx-auto flex max-w-6xl items-center justify-between px-6 py-4\" aria-label=\"Primary\">\n            <a href=\"/\" class=\"text-lg font-bold tracking-tight\">LaunchPilot AI</a>\n            <div class=\"flex items-center gap-6\">\n                <a href=\"/login\" class=\"text-sm font-semibold text-muted hover:text-ink\">Log in</a>\n                <a href=\"/register\" class=\"rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white hover:bg-ink/90\">Get started</a>\n            </div>\n        </nav>\n    </header>\n\n    <main>\n<section class=\"mx-auto max-w-md px-6 py-16\">\n    <div class=\"rounded-xl border border-line bg-white p-8 shadow-sm\">\n        <h1 class=\"text-2xl font-bold\">Log in to LaunchPilot</h1>\n        <p class=\"mt-2 text-sm text-muted\">Welcome back. Enter your details to continue.</p>\n\n\n        <form action=\"/login\" method=\"post\" class=\"mt-6 space-y-4\">\n            <input type=\"hidden\" name=\"_token\" value=\"eyJpdiI6IkVPcm1HenlEd3ZPSVBHYk0iLCJ2YWx1ZSI6IjRYYUZxMGF4b0o5MHJQQUpwT1puT2Y1MVV4b3lJNG1OSG9GRVcwbEZMemM9IiwidGFnIjoiNlRMWk5QTDNPcDQya3htMFRaNkx2QT09In0=\">\n            <div>\n                <label for=\"email\" class=\"block text-sm font-semibold\">Email</label>\n                <input id=\"email\" name=\"email\" type=\"email\" required class=\"mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue\">\n            </div>\n            <div>\n                <label for=\"password\" class=\"block text-sm font-semibold\">Password</label>\n                <input id=\"password\" name=\"password\" type=\"password\" required class=\"mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue\">\n            </div>\n            <button type=\"submit\" class=\"w-full rounded-lg bg-ink px-4 py-2.5 text-sm font-bold text-white hover:bg-ink/90\">Log in</button>\n        </form>\n\n        <p class=\"mt-6 text-center text-sm text-muted\">\n            Don't have an account? <a href=\"/register\" class=\"font-semibold text-ink hover:underline\">Get started</a>\n        </p>\n    </div>\n</section>\n    </main>\n\n    <footer class=\"border-t border-line mt-20\">\n        <div class=\"mx-auto max-w-6xl px-6 py-8 text-sm text-muted\">\n            &copy; 2026 LaunchPilot AI. Built for owner-led businesses.\n        </div>\n    </footer>\n</body>\n</html>"
+        }
+    }
+}

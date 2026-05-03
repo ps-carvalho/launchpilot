@@ -1,0 +1,160 @@
+{
+    "id": "8d97c0bd94c0abcf",
+    "stored_at": "2026-05-03T11:52:13+00:00",
+    "profiler_url": "/_debugbar/8d97c0bd94c0abcf",
+    "summary": {
+        "duration_ms": 26.72,
+        "memory": "2 MB",
+        "messages": 0,
+        "queries": 4,
+        "logs": 0,
+        "views": 0,
+        "method": "GET",
+        "uri": "/dashboard"
+    },
+    "collectors": {
+        "messages": {
+            "label": "Messages",
+            "badge": 0,
+            "messages": []
+        },
+        "time": {
+            "label": "Time",
+            "badge": "26.66 ms",
+            "duration_ms": 26.66,
+            "measures": []
+        },
+        "memory": {
+            "label": "Memory",
+            "badge": "2 MB",
+            "start_bytes": 2097152,
+            "current_bytes": 2097152,
+            "peak_bytes": 2097152,
+            "current": "2 MB",
+            "peak": "2 MB"
+        },
+        "request": {
+            "label": "Request",
+            "badge": "GET",
+            "method": "GET",
+            "uri": "/dashboard",
+            "query": [],
+            "post": [],
+            "headers": {
+                "Host": "localhost:8000",
+                "Connection": "keep-alive",
+                "Cache-Control": "max-age=0",
+                "Sec-Ch-Ua": "\"Google Chrome\";v=\"147\", \"Not.A/Brand\";v=\"8\", \"Chromium\";v=\"147\"",
+                "Sec-Ch-Ua-Mobile": "?0",
+                "Sec-Ch-Ua-Platform": "\"macOS\"",
+                "Upgrade-Insecure-Requests": "1",
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                "Sec-Fetch-Site": "same-origin",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-User": "?1",
+                "Sec-Fetch-Dest": "document",
+                "Referer": "http://localhost:8000/login",
+                "Accept-Encoding": "gzip, deflate, br, zstd",
+                "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+                "Cookie": "_ga=GA1.1.1685961291.1768162286; _ga_4Z4GWWS75V=GS2.1.s1771678227$o2$g1$t1771679343$j60$l0$h0; marko_session=f452addaa0bb7ede7c876438ee5d44d1"
+            }
+        },
+        "database": {
+            "label": "Database",
+            "badge": 4,
+            "count": 4,
+            "duration_ms": 23.33,
+            "slow_threshold_ms": 100,
+            "queries": [
+                {
+                    "type": "query",
+                    "sql": "SELECT * FROM \"users\" WHERE \"id\" = ? LIMIT 1",
+                    "bindings": [
+                        1
+                    ],
+                    "start_ms": 1.75,
+                    "duration_ms": 14.21,
+                    "rows": 1
+                },
+                {
+                    "type": "query",
+                    "sql": "SELECT * FROM \"users\" WHERE \"id\" = ? LIMIT 1",
+                    "bindings": [
+                        1
+                    ],
+                    "start_ms": 17.2,
+                    "duration_ms": 7,
+                    "rows": 1
+                },
+                {
+                    "type": "query",
+                    "sql": "SELECT \"workspaces\".\"id\", \"workspaces\".\"name\", \"workspaces\".\"slug\" FROM \"workspace_user\" INNER JOIN \"workspaces\" ON \"workspace_user\".\"workspace_id\" = \"workspaces\".\"id\" WHERE \"workspace_user\".\"user_id\" = ?",
+                    "bindings": [
+                        1
+                    ],
+                    "start_ms": 24.23,
+                    "duration_ms": 1.12,
+                    "rows": 1
+                },
+                {
+                    "type": "query",
+                    "sql": "SELECT * FROM \"campaigns\" WHERE \"workspace_id\" IN (?) ORDER BY \"created_at\" DESC",
+                    "bindings": [
+                        1
+                    ],
+                    "start_ms": 25.36,
+                    "duration_ms": 1,
+                    "rows": 0
+                }
+            ]
+        },
+        "logs": {
+            "label": "Logs",
+            "badge": 0,
+            "logs": []
+        },
+        "views": {
+            "label": "Views",
+            "badge": "0",
+            "count": 0,
+            "duration_ms": 0,
+            "renders": []
+        },
+        "response": {
+            "label": "Response",
+            "badge": "html",
+            "status": 200,
+            "body_type": "html",
+            "body_size": 1315,
+            "headers": [
+                "X-Powered-By: PHP/8.5.5",
+                "Expires: Thu, 19 Nov 1981 08:52:00 GMT",
+                "Cache-Control: no-store, no-cache, must-revalidate",
+                "Pragma: no-cache",
+                "Content-Type: text/html; charset=utf-8",
+                "Vary: X-Inertia"
+            ],
+            "preview": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Marko + Inertia</title>\n    <script type=\"module\">\nimport { injectIntoGlobalHook } from \"http://localhost:5173/@react-refresh\";\ninjectIntoGlobalHook(window);\nwindow.$RefreshReg$ = () => {};\nwindow.$RefreshSig$ = () => (type) => type;\n</script>\n<script type=\"module\" src=\"http://localhost:5173/@vite/client\"></script>\n<script type=\"module\" src=\"http://localhost:5173/js/app.jsx\"></script>\n    \n</head>\n<body>\n    <script data-page=\"app\" type=\"application/json\">{\"component\":\"Dashboard\\/Index\",\"props\":{\"errors\":{},\"flash\":[],\"user\":{\"id\":1,\"name\":\"Paulo\"},\"workspaces\":[{\"id\":1,\"name\":\"Paulo\\u0027s Workspace\",\"slug\":\"paulo-workspace\"}],\"campaigns\":[]},\"url\":\"\\/dashboard\",\"version\":null}</script><div id=\"app\" data-page=\"{&quot;component&quot;:&quot;Dashboard\\/Index&quot;,&quot;props&quot;:{&quot;errors&quot;:{},&quot;flash&quot;:[],&quot;user&quot;:{&quot;id&quot;:1,&quot;name&quot;:&quot;Paulo&quot;},&quot;workspaces&quot;:[{&quot;id&quot;:1,&quot;name&quot;:&quot;Paulo\\u0027s Workspace&quot;,&quot;slug&quot;:&quot;paulo-workspace&quot;}],&quot;campaigns&quot;:[]},&quot;url&quot;:&quot;\\/dashboard&quot;,&quot;version&quot;:null}\"></div>\n</body>\n</html>"
+        },
+        "inertia": {
+            "label": "Inertia",
+            "badge": "Dashboard/Index",
+            "mode": "html",
+            "component": "Dashboard/Index",
+            "url": "/dashboard",
+            "version": "",
+            "props_count": 5,
+            "prop_keys": [
+                "errors",
+                "flash",
+                "user",
+                "workspaces",
+                "campaigns"
+            ],
+            "partial_component": null,
+            "partial_data": null,
+            "partial_except": null
+        }
+    }
+}

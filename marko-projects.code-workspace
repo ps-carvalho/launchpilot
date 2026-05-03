@@ -1,0 +1,13 @@
+{
+  "folders": [
+	{
+		"path": "../../marko-demos"
+	},
+	{
+		"path": "../../marko-framework"
+	},
+	{
+		"path": ".."
+	}
+]
+}

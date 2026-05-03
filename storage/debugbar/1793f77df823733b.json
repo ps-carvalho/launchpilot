@@ -1,0 +1,103 @@
+{
+    "id": "1793f77df823733b",
+    "stored_at": "2026-05-03T11:53:09+00:00",
+    "profiler_url": "/_debugbar/1793f77df823733b",
+    "summary": {
+        "duration_ms": 15.39,
+        "memory": "2 MB",
+        "messages": 0,
+        "queries": 1,
+        "logs": 0,
+        "views": 0,
+        "method": "POST",
+        "uri": "/login"
+    },
+    "collectors": {
+        "messages": {
+            "label": "Messages",
+            "badge": 0,
+            "messages": []
+        },
+        "time": {
+            "label": "Time",
+            "badge": "15.35 ms",
+            "duration_ms": 15.36,
+            "measures": []
+        },
+        "memory": {
+            "label": "Memory",
+            "badge": "2 MB",
+            "start_bytes": 2097152,
+            "current_bytes": 2097152,
+            "peak_bytes": 2097152,
+            "current": "2 MB",
+            "peak": "2 MB"
+        },
+        "request": {
+            "label": "Request",
+            "badge": "POST",
+            "method": "POST",
+            "uri": "/login",
+            "query": [],
+            "post": {
+                "_token": "[masked]",
+                "email": "test@example.com",
+                "password": "[masked]"
+            },
+            "headers": {
+                "Host": "localhost:8000",
+                "User-Agent": "curl/8.7.1",
+                "Accept": "*/*",
+                "Cookie": "marko_session=eca8c4007ac95939f96b9ddfbf9c2f1f",
+                "Content-Length": "203",
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+        },
+        "database": {
+            "label": "Database",
+            "badge": 1,
+            "count": 1,
+            "duration_ms": 12.16,
+            "slow_threshold_ms": 100,
+            "queries": [
+                {
+                    "type": "query",
+                    "sql": "SELECT * FROM \"users\" WHERE \"email\" = ? LIMIT 1",
+                    "bindings": [
+                        "test@example.com"
+                    ],
+                    "start_ms": 2.93,
+                    "duration_ms": 12.16,
+                    "rows": 0
+                }
+            ]
+        },
+        "logs": {
+            "label": "Logs",
+            "badge": 0,
+            "logs": []
+        },
+        "views": {
+            "label": "Views",
+            "badge": "0",
+            "count": 0,
+            "duration_ms": 0,
+            "renders": []
+        },
+        "response": {
+            "label": "Response",
+            "badge": "empty",
+            "status": 302,
+            "body_type": "empty",
+            "body_size": 0,
+            "headers": [
+                "X-Powered-By: PHP/8.5.5",
+                "Expires: Thu, 19 Nov 1981 08:52:00 GMT",
+                "Cache-Control: no-store, no-cache, must-revalidate",
+                "Pragma: no-cache",
+                "Location: /login"
+            ],
+            "preview": ""
+        }
+    }
+}

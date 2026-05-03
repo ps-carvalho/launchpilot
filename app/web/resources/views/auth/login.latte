@@ -1,0 +1,35 @@
+{layout 'web::layouts/main'}
+
+{block content}
+<section class="mx-auto max-w-md px-6 py-16">
+    <div class="rounded-xl border border-line bg-white p-8 shadow-sm">
+        <h1 class="text-2xl font-bold">Log in to LaunchPilot</h1>
+        <p class="mt-2 text-sm text-muted">Welcome back. Enter your details to continue.</p>
+
+        {if isset($flash) && count($flash) > 0}
+            {foreach $flash as $message}
+                <div class="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                    {$message}
+                </div>
+            {/foreach}
+        {/if}
+
+        <form action="/login" method="post" class="mt-6 space-y-4">
+            <input type="hidden" name="_token" value="{$csrf_token}">
+            <div>
+                <label for="email" class="block text-sm font-semibold">Email</label>
+                <input id="email" name="email" type="email" required class="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue">
+            </div>
+            <div>
+                <label for="password" class="block text-sm font-semibold">Password</label>
+                <input id="password" name="password" type="password" required class="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue">
+            </div>
+            <button type="submit" class="w-full rounded-lg bg-ink px-4 py-2.5 text-sm font-bold text-white hover:bg-ink/90">Log in</button>
+        </form>
+
+        <p class="mt-6 text-center text-sm text-muted">
+            Don't have an account? <a href="/register" class="font-semibold text-ink hover:underline">Get started</a>
+        </p>
+    </div>
+</section>
+{/block}

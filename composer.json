@@ -1,0 +1,38 @@
+{
+    "name": "paulo/ai-marketing-tool",
+    "description": "AI-driven marketing tool for small businesses and entrepreneurs built with Marko.",
+    "license": "MIT",
+    "type": "project",
+    "require": {
+        "php": "^8.5",
+        "marko/env": "^0.5",
+        "marko/framework": "^0.5",
+        "marko/database": "^0.5",
+        "marko/database-pgsql": "^0.5",
+        "marko/view": "^0.5",
+        "marko/view-latte": "^0.5",
+        "marko/layout": "^0.5",
+        "marko/inertia": "^0.5",
+        "marko/inertia-react": "^0.5",
+        "marko/vite": "^0.5",
+        "marko/authentication": "^0.5",
+        "marko/session": "^0.5",
+        "marko/session-file": "^0.5",
+        "marko/security": "^0.5",
+        "marko/encryption-openssl": "^0.5"
+    },
+    "require-dev": {
+        "marko/dev-server": "^0.5",
+        "pestphp/pest": "^4.0",
+        "marko/debugbar": "^0.5.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "scripts": {
+        "dev": "bash bin/dev",
+        "test": "pest"
+    }
+}

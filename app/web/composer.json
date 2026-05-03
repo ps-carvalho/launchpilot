@@ -1,0 +1,14 @@
+{
+    "name": "app/web",
+    "description": "Public web pages for LaunchPilot AI.",
+    "autoload": {
+        "psr-4": {
+            "App\\Web\\": "src/"
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

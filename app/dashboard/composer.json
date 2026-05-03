@@ -1,0 +1,14 @@
+{
+    "name": "app/dashboard",
+    "description": "Authenticated dashboard for LaunchPilot AI.",
+    "autoload": {
+        "psr-4": {
+            "App\\Dashboard\\": "src/"
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "processes": [
+        {
+            "name": "php",
+            "pid": 5622,
+            "command": "env PHP_CLI_SERVER_WORKERS=4 php -S localhost:8000 -t public\/",
+            "port": 8000,
+            "startedAt": "2026-05-02T21:02:37+00:00"
+        }
+    ]
+}

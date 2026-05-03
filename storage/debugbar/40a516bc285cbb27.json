@@ -1,0 +1,111 @@
+{
+    "id": "40a516bc285cbb27",
+    "stored_at": "2026-05-03T11:51:32+00:00",
+    "profiler_url": "/_debugbar/40a516bc285cbb27",
+    "summary": {
+        "duration_ms": 3.15,
+        "memory": "2 MB",
+        "messages": 0,
+        "queries": 0,
+        "logs": 0,
+        "views": 1,
+        "method": "GET",
+        "uri": "/register"
+    },
+    "collectors": {
+        "messages": {
+            "label": "Messages",
+            "badge": 0,
+            "messages": []
+        },
+        "time": {
+            "label": "Time",
+            "badge": "3.12 ms",
+            "duration_ms": 3.12,
+            "measures": []
+        },
+        "memory": {
+            "label": "Memory",
+            "badge": "2 MB",
+            "start_bytes": 2097152,
+            "current_bytes": 2097152,
+            "peak_bytes": 2097152,
+            "current": "2 MB",
+            "peak": "2 MB"
+        },
+        "request": {
+            "label": "Request",
+            "badge": "GET",
+            "method": "GET",
+            "uri": "/register",
+            "query": [],
+            "post": [],
+            "headers": {
+                "Host": "localhost:8000",
+                "Connection": "keep-alive",
+                "Cache-Control": "max-age=0",
+                "Upgrade-Insecure-Requests": "1",
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                "Sec-Fetch-Site": "same-origin",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-User": "?1",
+                "Sec-Fetch-Dest": "document",
+                "Sec-Ch-Ua": "\"Google Chrome\";v=\"147\", \"Not.A/Brand\";v=\"8\", \"Chromium\";v=\"147\"",
+                "Sec-Ch-Ua-Mobile": "?0",
+                "Sec-Ch-Ua-Platform": "\"macOS\"",
+                "Referer": "http://localhost:8000/register",
+                "Accept-Encoding": "gzip, deflate, br, zstd",
+                "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+                "Cookie": "_ga=GA1.1.1685961291.1768162286; _ga_4Z4GWWS75V=GS2.1.s1771678227$o2$g1$t1771679343$j60$l0$h0; marko_session=d66b58b9440b8236af0a534d91b18f22"
+            }
+        },
+        "database": {
+            "label": "Database",
+            "badge": 0,
+            "count": 0,
+            "duration_ms": 0,
+            "slow_threshold_ms": 100,
+            "queries": []
+        },
+        "logs": {
+            "label": "Logs",
+            "badge": 0,
+            "logs": []
+        },
+        "views": {
+            "label": "Views",
+            "badge": "1",
+            "count": 1,
+            "duration_ms": 0.24,
+            "renders": [
+                {
+                    "method": "render",
+                    "template": "auth/register",
+                    "data_keys": [
+                        "csrf_token",
+                        "flash"
+                    ],
+                    "start_ms": 2.75,
+                    "duration_ms": 0.24,
+                    "output_size": 3884
+                }
+            ]
+        },
+        "response": {
+            "label": "Response",
+            "badge": "html",
+            "status": 200,
+            "body_type": "html",
+            "body_size": 3884,
+            "headers": [
+                "X-Powered-By: PHP/8.5.5",
+                "Expires: Thu, 19 Nov 1981 08:52:00 GMT",
+                "Cache-Control: no-store, no-cache, must-revalidate",
+                "Pragma: no-cache",
+                "Content-Type: text/html; charset=utf-8"
+            ],
+            "preview": "<!doctype html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <title>LaunchPilot AI</title>\n    <meta name=\"description\" content=\"AI-driven marketing campaign planning for small businesses and entrepreneurs.\">\n    <script src=\"https://cdn.tailwindcss.com\"></script>\n    <script>\n        tailwind.config = {\n            theme: {\n                extend: {\n                    colors: {\n                        ink: '#172026',\n                        muted: '#64717d',\n                        line: '#d9e1e8',\n                        paper: '#fbfcfd',\n                        surface: '#ffffff',\n                        green: '#1f8a70',\n                        blue: '#2563eb',\n                        amber: '#b86f08',\n                    }\n                }\n            }\n        }\n    </script>\n</head>\n<body class=\"bg-paper text-ink antialiased\">\n    <header class=\"border-b border-line bg-white/90 backdrop-blur\">\n        <nav class=\"mx-auto flex max-w-6xl items-center justify-between px-6 py-4\" aria-label=\"Primary\">\n            <a href=\"/\" class=\"text-lg font-bold tracking-tight\">LaunchPilot AI</a>\n            <div class=\"flex items-center gap-6\">\n                <a href=\"/login\" class=\"text-sm font-semibold text-muted hover:text-ink\">Log in</a>\n                <a href=\"/register\" class=\"rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white hover:bg-ink/90\">Get started</a>\n            </div>\n        </nav>\n    </header>\n\n    <main>\n<section class=\"mx-auto max-w-md px-6 py-16\">\n    <div class=\"rounded-xl border border-line bg-white p-8 shadow-sm\">\n        <h1 class=\"text-2xl font-bold\">Create your account</h1>\n        <p class=\"mt-2 text-sm text-muted\">Start planning your marketing campaigns today.</p>\n\n                <div class=\"mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm font-semibold text-red-700\">\n                    Email already registered.\n                </div>\n\n        <form action=\"/register\" method=\"post\" class=\"mt-6 space-y-4\">\n            <input type=\"hidden\" name=\"_token\" value=\"eyJpdiI6InFYYVhYbUxrcWZKOTRRNGYiLCJ2YWx1ZSI6IkpvZXpURkhDbXNieUVBYjJFVG5uWm5tcUtjbjdFU1MwZHhIcDBXM0FsR289IiwidGFnIjoiWlpLVWFwc0dsOTYxTHlHNlY5SUlyUT09In0=\">\n            <div>\n                <label for=\"name\" class=\"block text-sm font-semibold\">Full name</label>\n                <input id=\"name\" name=\"name\" type=\"text\" required class=\"mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue\">\n            </div>\n            <div>\n                <label for=\"email\" class=\"block text-sm font-semibold\">Email</label>\n                <input id=\"email\" name=\"email\" type=\"email\" required class=\"mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue\">\n            </div>\n            <div>\n                <label for=\"password\" class=\"block text-sm font-semibold\">Password</label>\n                <input id=\"password\" name=\"password\" type=\"password\" required minlength=\"8\" class=\"mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue\">\n            </div>\n            <button type=\"submit\" class=\"w-full rounded-lg bg-ink px-4 py-2.5 text-sm font-bold text-white hover:bg-ink/90\">Create account</button>\n        </form>\n\n        <p class=\"mt-6 text-center text-sm text-muted\">\n            Already have an account? <a href=\"/login\" class=\"font-semibold text-ink hover:underline\">Log in</a>\n        </p>\n    </div>\n</section>\n    </main>\n\n    <footer class=\"border-t border-line mt-20\">\n        <div class=\"mx-auto max-w-6xl px-6 py-8 text-sm text-muted\">\n            &copy; 2026 LaunchPilot AI. Built for owner-led businesses.\n        </div>\n    </footer>\n</body>\n</html>"
+        }
+    }
+}
