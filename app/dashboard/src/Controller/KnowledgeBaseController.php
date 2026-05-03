@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
-use App\Dashboard\Service\EmbeddingService;
+use App\Dashboard\Authorization\WorkspaceAuthorization;
 use App\Dashboard\Service\KnowledgeBaseService;
-use App\Dashboard\Service\VectorSearchService;
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
@@ -28,8 +27,7 @@ class KnowledgeBaseController
         private readonly AuthManager $auth,
         private readonly QueryBuilderFactoryInterface $queryFactory,
         private readonly KnowledgeBaseService $kbService,
-        private readonly VectorSearchService $vectorSearch,
-        private readonly EmbeddingService $embedder,
+        private readonly WorkspaceAuthorization $workspaceAuth,
         private readonly SessionInterface $session,
     ) {}
 
@@ -37,12 +35,7 @@ class KnowledgeBaseController
     public function index(Request $request): Response
     {
         $userId = $this->auth->id() ?? 0;
-
-        $workspace = $this->queryFactory->create()->table('workspace_user')
-            ->select('workspaces.id', 'workspaces.name')
-            ->join('workspaces', 'workspace_user.workspace_id', '=', 'workspaces.id')
-            ->where('workspace_user.user_id', '=', $userId)
-            ->first();
+        $workspace = $this->workspaceAuth->firstWorkspaceFor($userId);
 
         $documents = [];
 
@@ -62,22 +55,7 @@ class KnowledgeBaseController
     #[Get('/knowledge-base/{id}')]
     public function show(Request $request, int $id): Response
     {
-        $userId = $this->auth->id() ?? 0;
-
-        $workspace = $this->queryFactory->create()->table('workspace_user')
-            ->select('workspaces.id')
-            ->join('workspaces', 'workspace_user.workspace_id', '=', 'workspaces.id')
-            ->where('workspace_user.user_id', '=', $userId)
-            ->first();
-
-        if ($workspace === null) {
-            return Response::redirect('/knowledge-base');
-        }
-
-        $document = $this->queryFactory->create()->table('knowledge_documents')
-            ->where('id', '=', $id)
-            ->where('workspace_id', '=', $workspace['id'])
-            ->first();
+        $document = $this->workspaceAuth->documentFor($this->auth->id() ?? 0, $id);
 
         if ($document === null) {
             return Response::redirect('/knowledge-base');
@@ -94,12 +72,7 @@ class KnowledgeBaseController
     public function upload(Request $request): Response
     {
         $userId = $this->auth->id() ?? 0;
-
-        $workspace = $this->queryFactory->create()->table('workspace_user')
-            ->select('workspaces.id')
-            ->join('workspaces', 'workspace_user.workspace_id', '=', 'workspaces.id')
-            ->where('workspace_user.user_id', '=', $userId)
-            ->first();
+        $workspace = $this->workspaceAuth->firstWorkspaceFor($userId);
 
         if ($workspace === null) {
             $this->session->flash()->add('error', 'No workspace found.');
@@ -145,61 +118,21 @@ class KnowledgeBaseController
         return Response::redirect('/knowledge-base');
     }
 
-    #[Get('/api/knowledge-base/search')]
-    public function search(Request $request): Response
-    {
-        $query = $request->query('q');
-
-        if (empty($query)) {
-            return Response::json(['results' => []]);
-        }
-
-        $userId = $this->auth->id() ?? 0;
-
-        $workspace = $this->queryFactory->create()->table('workspace_user')
-            ->select('workspaces.id')
-            ->join('workspaces', 'workspace_user.workspace_id', '=', 'workspaces.id')
-            ->where('workspace_user.user_id', '=', $userId)
-            ->first();
-
-        if ($workspace === null) {
-            return Response::json(['results' => []]);
-        }
-
-        $embeddings = $this->embedder->embed([$query]);
-
-        if ($embeddings === null) {
-            return Response::json(['results' => [], 'error' => 'Embedding service not configured.']);
-        }
-
-        $results = $this->vectorSearch->search($embeddings[0], 5, (int) $workspace['id']);
-
-        return Response::json(['results' => $results]);
-    }
-
     #[Post('/knowledge-base/{id}/delete')]
     public function delete(int $id): Response
     {
-        $userId = $this->auth->id() ?? 0;
+        $document = $this->workspaceAuth->documentFor($this->auth->id() ?? 0, $id);
 
-        $workspace = $this->queryFactory->create()->table('workspace_user')
-            ->select('workspaces.id')
-            ->join('workspaces', 'workspace_user.workspace_id', '=', 'workspaces.id')
-            ->where('workspace_user.user_id', '=', $userId)
-            ->first();
-
-        if ($workspace === null) {
+        if ($document === null) {
             return Response::redirect('/knowledge-base');
         }
 
-        // Delete chunks first (cascade would be better but manual is safer for now)
         $this->queryFactory->create()->table('knowledge_chunks')
             ->where('document_id', '=', $id)
             ->delete();
 
         $this->queryFactory->create()->table('knowledge_documents')
             ->where('id', '=', $id)
-            ->where('workspace_id', '=', $workspace['id'])
             ->delete();
 
         $this->session->flash()->add('success', 'Document deleted.');

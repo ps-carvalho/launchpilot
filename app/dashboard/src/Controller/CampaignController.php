@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
+use App\Dashboard\Authorization\WorkspaceAuthorization;
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
@@ -22,6 +23,7 @@ class CampaignController
         private readonly Inertia $inertia,
         private readonly AuthManager $auth,
         private readonly QueryBuilderFactoryInterface $queryFactory,
+        private readonly WorkspaceAuthorization $workspaceAuth,
     ) {}
 
     #[Get('/campaigns/{id}')]
@@ -29,21 +31,7 @@ class CampaignController
     {
         $userId = $this->auth->id() ?? 0;
 
-        $workspaceIds = $this->queryFactory->create()->table('workspace_user')
-            ->select('workspace_id')
-            ->where('user_id', '=', $userId)
-            ->get();
-
-        $ids = array_column($workspaceIds, 'workspace_id');
-
-        if (empty($ids)) {
-            return Response::redirect('/dashboard');
-        }
-
-        $campaign = $this->queryFactory->create()->table('campaigns')
-            ->where('id', '=', $id)
-            ->whereIn('workspace_id', $ids)
-            ->first();
+        $campaign = $this->workspaceAuth->campaignFor($userId, $id);
 
         if ($campaign === null) {
             return Response::redirect('/dashboard');

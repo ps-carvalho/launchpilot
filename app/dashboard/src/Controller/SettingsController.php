@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
-use App\Dashboard\Helper\JsonInput;
+use App\Dashboard\Authorization\WorkspaceAuthorization;
+use App\Dashboard\Http\RequestBodyParser;
 use App\Dashboard\Service\ExportService;
 use App\Dashboard\Service\GoogleSearchConsoleService;
 use App\Dashboard\Service\UserSettingsService;
@@ -31,7 +32,9 @@ class SettingsController
         private readonly UserSettingsService $userSettings,
         private readonly GoogleSearchConsoleService $gscService,
         private readonly ExportService $exportService,
+        private readonly WorkspaceAuthorization $workspaceAuth,
         private readonly SessionInterface $session,
+        private readonly RequestBodyParser $bodyParser,
     ) {}
 
     #[Get('/settings')]
@@ -129,7 +132,7 @@ class SettingsController
             return Response::json(['error' => 'Premium feature. Upgrade to Pro.'], 403);
         }
 
-        $key = JsonInput::get($request, 'api_key');
+        $key = $this->bodyParser->get($request, 'api_key');
         $this->queryFactory->create()->table('user_settings')
             ->where('user_id', '=', $userId)
             ->update([
@@ -149,7 +152,7 @@ class SettingsController
             return Response::json(['error' => 'Premium feature. Upgrade to Pro.'], 403);
         }
 
-        $prompts = JsonInput::get($request, 'prompts', []);
+        $prompts = $this->bodyParser->get($request, 'prompts', []);
         $this->userSettings->updateCustomPrompts($userId, $prompts);
 
         return Response::json(['success' => true]);
@@ -200,12 +203,7 @@ class SettingsController
     public function export(): Response
     {
         $userId = $this->auth->id() ?? 0;
-
-        $workspace = $this->queryFactory->create()->table('workspace_user')
-            ->select('workspaces.id')
-            ->join('workspaces', 'workspace_user.workspace_id', '=', 'workspaces.id')
-            ->where('workspace_user.user_id', '=', $userId)
-            ->first();
+        $workspace = $this->workspaceAuth->firstWorkspaceFor($userId);
 
         if ($workspace === null) {
             return Response::redirect('/settings');
