@@ -66,6 +66,21 @@ class CampaignController
         ]);
     }
 
+    #[Get('/campaigns/create')]
+    public function create(Request $request): Response
+    {
+        $userId = $this->auth->id() ?? 0;
+        $workspaces = $this->workspaceAuth->workspacesFor($userId);
+
+        if (empty($workspaces)) {
+            return Response::redirect('/dashboard');
+        }
+
+        return $this->inertia->render($request, 'Campaign/Create', [
+            'workspaces' => $workspaces,
+        ]);
+    }
+
     #[Get('/campaigns/{id}')]
     public function show(Request $request, int $id): Response
     {
@@ -119,21 +134,6 @@ class CampaignController
                 'Content-Disposition' => 'attachment; filename="' . $filename . '"',
             ],
         );
-    }
-
-    #[Get('/campaigns/create')]
-    public function create(Request $request): Response
-    {
-        $userId = $this->auth->id() ?? 0;
-        $workspaces = $this->workspaceAuth->workspacesFor($userId);
-
-        if (empty($workspaces)) {
-            return Response::redirect('/dashboard');
-        }
-
-        return $this->inertia->render($request, 'Campaign/Create', [
-            'workspaces' => $workspaces,
-        ]);
     }
 
     #[Post('/campaigns')]
