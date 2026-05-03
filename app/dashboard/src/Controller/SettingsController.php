@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
+use App\Dashboard\Helper\JsonInput;
 use App\Dashboard\Service\ExportService;
 use App\Dashboard\Service\GoogleSearchConsoleService;
 use App\Dashboard\Service\UserSettingsService;
@@ -128,7 +129,7 @@ class SettingsController
             return Response::json(['error' => 'Premium feature. Upgrade to Pro.'], 403);
         }
 
-        $key = $request->post('api_key');
+        $key = JsonInput::get($request, 'api_key');
         $this->queryFactory->create()->table('user_settings')
             ->where('user_id', '=', $userId)
             ->update([
@@ -148,7 +149,7 @@ class SettingsController
             return Response::json(['error' => 'Premium feature. Upgrade to Pro.'], 403);
         }
 
-        $prompts = $request->post('prompts', []);
+        $prompts = JsonInput::get($request, 'prompts', []);
         $this->userSettings->updateCustomPrompts($userId, $prompts);
 
         return Response::json(['success' => true]);

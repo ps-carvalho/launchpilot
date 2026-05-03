@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
+use App\Dashboard\Helper\JsonInput;
 use App\Dashboard\Service\KnowledgeBaseService;
 use App\Dashboard\Service\WebsiteScraper;
 use Marko\Authentication\AuthManager;
@@ -50,7 +51,7 @@ class OnboardingController
             return Response::redirect('/dashboard');
         }
 
-        $url = $request->post('url');
+        $url = JsonInput::get($request, 'url');
 
         if (empty($url)) {
             $this->session->flash()->add('error', 'Please enter a website URL.');

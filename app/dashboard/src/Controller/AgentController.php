@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
+use App\Dashboard\Helper\JsonInput;
 use App\Dashboard\Service\AgentChatService;
 use App\Dashboard\Service\EmbeddingService;
 use App\Dashboard\Service\GoogleSearchConsoleService;
@@ -63,7 +64,7 @@ class AgentController
     public function chat(Request $request, int $campaignId, string $agentType): Response
     {
         $userId = $this->auth->id() ?? 0;
-        $message = $request->post('message');
+        $message = JsonInput::get($request, 'message');
 
         if (empty($message)) {
             return Response::json(['error' => 'Message is required.'], 422);
@@ -193,8 +194,8 @@ class AgentController
     public function saveToCampaign(Request $request, int $campaignId, string $agentType): Response
     {
         $userId = $this->auth->id() ?? 0;
-        $content = $request->post('content');
-        $platform = $request->post('platform');
+        $content = JsonInput::get($request, 'content');
+        $platform = JsonInput::get($request, 'platform');
 
         if (empty($content)) {
             return Response::json(['error' => 'Content is required.'], 422);

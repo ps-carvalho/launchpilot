@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
+use App\Dashboard\Helper\JsonInput;
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
@@ -35,7 +36,7 @@ class ContentItemController
     #[Post('/api/content-items/{id}/status')]
     public function updateStatus(Request $request, int $id): Response
     {
-        $newStatus = $request->post('status');
+        $newStatus = JsonInput::get($request, 'status');
 
         if (!in_array($newStatus, self::VALID_STATUSES, true)) {
             return Response::json(['error' => 'Invalid status.'], 422);
@@ -67,7 +68,7 @@ class ContentItemController
     #[Post('/api/content-items/{id}/edit')]
     public function edit(Request $request, int $id): Response
     {
-        $content = $request->post('content');
+        $content = JsonInput::get($request, 'content');
 
         if (empty($content)) {
             return Response::json(['error' => 'Content is required.'], 422);
