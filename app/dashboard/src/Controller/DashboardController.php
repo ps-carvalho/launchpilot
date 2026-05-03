@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
+use App\Dashboard\Service\UserSettingsService;
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
@@ -22,6 +23,7 @@ class DashboardController
         private readonly Inertia $inertia,
         private readonly AuthManager $auth,
         private readonly QueryBuilderFactoryInterface $queryFactory,
+        private readonly UserSettingsService $userSettings,
     ) {}
 
     #[Get('/dashboard')]
@@ -64,6 +66,10 @@ class DashboardController
             'campaigns' => $campaigns,
             'documents' => $documents,
             'hasCompletedOnboarding' => $hasCompletedOnboarding,
+            'usage' => [
+                'remaining' => $this->userSettings->getRemainingRuns($userId),
+                'tier' => $this->userSettings->getOrCreate($userId)['tier'] ?? 'free',
+            ],
         ]);
     }
 }

@@ -6,30 +6,27 @@ namespace App\Dashboard\Service;
 
 class AgentChatService
 {
-    private string $apiKey;
-
-    public function __construct()
-    {
-        $this->apiKey = $_ENV['OPENROUTER_API_KEY'] ?? '';
-    }
+    public function __construct(
+        private readonly UserSettingsService $userSettings,
+    ) {}
 
     /**
-     * Send a message to the agent and get a response.
-     *
      * @param array<int, array{role: string, content: string}> $history
      * @param array<int, array<string, mixed>> $kbContext
      * @return array{role: string, content: string}|null
      */
-    public function chat(string $agentType, string $userMessage, array $history, array $kbContext): ?array
+    public function chat(int $userId, string $agentType, string $userMessage, array $history, array $kbContext): ?array
     {
-        if (empty($this->apiKey) || $this->apiKey === 'sk-or-v1-REPLACE_ME') {
+        $apiKey = $this->userSettings->getEffectiveApiKey($userId);
+
+        if (empty($apiKey) || $apiKey === 'sk-or-v1-REPLACE_ME') {
             return [
                 'role' => 'assistant',
                 'content' => "⚠️ OpenRouter API key is not configured. Please add `OPENROUTER_API_KEY` to your `.env` file to enable AI agents.",
             ];
         }
 
-        $systemPrompt = $this->buildSystemPrompt($agentType, $kbContext);
+        $systemPrompt = $this->buildSystemPrompt($userId, $agentType, $kbContext);
 
         $messages = [
             ['role' => 'system', 'content' => $systemPrompt],
@@ -41,7 +38,7 @@ class AgentChatService
 
         $messages[] = ['role' => 'user', 'content' => $userMessage];
 
-        $response = $this->request([
+        $response = $this->request($apiKey, [
             'model' => 'openai/gpt-4o-mini',
             'messages' => $messages,
             'temperature' => 0.7,
@@ -67,13 +64,16 @@ class AgentChatService
     /**
      * @param array<int, array<string, mixed>> $kbContext
      */
-    private function buildSystemPrompt(string $agentType, array $kbContext): string
+    private function buildSystemPrompt(int $userId, string $agentType, array $kbContext): string
     {
-        $kbText = '';
-        foreach ($kbContext as $chunk) {
-            $kbText .= "\n---\nSource: {$chunk['original_name']}\n";
-            $kbText .= $chunk['chunk_text'];
+        // Check for custom prompt (premium feature)
+        $customPrompts = $this->userSettings->getCustomPrompts($userId);
+        if (!empty($customPrompts[$agentType])) {
+            $kbText = $this->formatKbContext($kbContext);
+            return $customPrompts[$agentType] . "\n\nBUSINESS CONTEXT:\n" . $kbText;
         }
+
+        $kbText = $this->formatKbContext($kbContext);
 
         $prompts = [
             'social' => "You are a Social Media Marketing Agent for LaunchPilot. Your job is to write engaging, platform-appropriate social media posts based on the user's business context.\n\nBUSINESS CONTEXT:\n{$kbText}\n\nInstructions:\n- Write short, punchy, engaging posts\n- Match the tone to the platform (LinkedIn = professional, Facebook = friendly, general = adaptable)\n- Include relevant hashtags when appropriate\n- Always provide the post text ready to copy-paste\n- If the user asks for multiple posts, number them clearly",
@@ -89,10 +89,23 @@ class AgentChatService
     }
 
     /**
+     * @param array<int, array<string, mixed>> $kbContext
+     */
+    private function formatKbContext(array $kbContext): string
+    {
+        $text = '';
+        foreach ($kbContext as $chunk) {
+            $text .= "\n---\nSource: " . ($chunk['original_name'] ?? 'Unknown') . "\n";
+            $text .= $chunk['chunk_text'] ?? '';
+        }
+        return $text;
+    }
+
+    /**
      * @param array<string, mixed> $payload
      * @return array<string, mixed>|null
      */
-    private function request(array $payload): ?array
+    private function request(string $apiKey, array $payload): ?array
     {
         $json = json_encode($payload);
         if ($json === false) {
@@ -104,7 +117,7 @@ class AgentChatService
                 'method' => 'POST',
                 'header' => [
                     'Content-Type: application/json',
-                    'Authorization: Bearer ' . $this->apiKey,
+                    'Authorization: Bearer ' . $apiKey,
                     'HTTP-Referer: https://launchpilot.ai',
                     'X-Title: LaunchPilot',
                 ],

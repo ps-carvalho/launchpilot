@@ -9,9 +9,11 @@ const AGENTS = [
     { type: 'brainstorm', label: 'Brainstorm Agent', icon: '💡', description: 'Feature ideas and targeting advice' },
 ];
 
-export default function CampaignShow({ campaign, contentItems, sessions }) {
+export default function CampaignShow({ campaign, contentItems: initialItems, sessions }) {
     const [activeAgent, setActiveAgent] = useState('social');
-    const [showItems, setShowItems] = useState(true);
+    const [contentItems, setContentItems] = useState(initialItems);
+    const [editingId, setEditingId] = useState(null);
+    const [editText, setEditText] = useState('');
 
     const statusColors = {
         draft: 'bg-amber-50 text-amber-700',
@@ -20,11 +22,62 @@ export default function CampaignShow({ campaign, contentItems, sessions }) {
         published: 'bg-green-50 text-green-700',
     };
 
+    const statusTransitions = {
+        draft: ['approved'],
+        approved: ['scheduled', 'published', 'draft'],
+        scheduled: ['published', 'draft', 'approved'],
+        published: [],
+    };
+
     const typeLabels = {
         social_post: 'Social Post',
         blog_post: 'Blog Post',
         seo_report: 'SEO Report',
         brainstorm_note: 'Brainstorm Note',
+    };
+
+    const updateStatus = async (itemId, newStatus) => {
+        try {
+            const res = await fetch(`/api/content-items/${itemId}/status`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setContentItems((prev) => prev.map((item) =>
+                    item.id === itemId ? { ...item, status: newStatus, published_at: newStatus === 'published' ? new Date().toISOString() : item.published_at } : item
+                ));
+            }
+        } catch (e) {
+            alert('Failed to update status.');
+        }
+    };
+
+    const startEdit = (item) => {
+        setEditingId(item.id);
+        setEditText(item.content);
+    };
+
+    const saveEdit = async (itemId) => {
+        try {
+            const res = await fetch(`/api/content-items/${itemId}/edit`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: editText }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setContentItems((prev) => prev.map((item) =>
+                    item.id === itemId ? { ...item, content: editText } : item
+                ));
+                setEditingId(null);
+            }
+        } catch (e) {
+            alert('Failed to save edit.');
+        }
     };
 
     return (
@@ -66,7 +119,6 @@ export default function CampaignShow({ campaign, contentItems, sessions }) {
                     <div className="grid gap-6 lg:grid-cols-5">
                         {/* Left: Agent Chat */}
                         <div className="lg:col-span-3">
-                            {/* Agent Tabs */}
                             <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
                                 {AGENTS.map((agent) => (
                                     <button
@@ -116,25 +168,67 @@ export default function CampaignShow({ campaign, contentItems, sessions }) {
                                                         {item.status}
                                                     </span>
                                                 </div>
-                                                <p className="text-xs text-slate-600 line-clamp-3">{item.content}</p>
-                                                <div className="mt-2 flex items-center gap-2">
-                                                    <button
-                                                        onClick={() => navigator.clipboard.writeText(item.content)}
-                                                        className="text-xs text-muted hover:text-ink underline"
-                                                    >
-                                                        Copy
-                                                    </button>
-                                                    {item.platform && (
-                                                        <span className="text-xs text-muted">{item.platform}</span>
-                                                    )}
-                                                </div>
+
+                                                {editingId === item.id ? (
+                                                    <div className="mt-2">
+                                                        <textarea
+                                                            value={editText}
+                                                            onChange={(e) => setEditText(e.target.value)}
+                                                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink"
+                                                            rows={4}
+                                                        />
+                                                        <div className="mt-2 flex gap-2">
+                                                            <button
+                                                                onClick={() => saveEdit(item.id)}
+                                                                className="text-xs bg-ink text-white px-3 py-1 rounded font-medium"
+                                                            >
+                                                                Save
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setEditingId(null)}
+                                                                className="text-xs text-muted hover:text-ink"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <p className="text-xs text-slate-600 line-clamp-3">{item.content}</p>
+                                                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                                                            <button
+                                                                onClick={() => navigator.clipboard.writeText(item.content)}
+                                                                className="text-xs text-muted hover:text-ink underline"
+                                                            >
+                                                                Copy
+                                                            </button>
+                                                            <button
+                                                                onClick={() => startEdit(item)}
+                                                                className="text-xs text-muted hover:text-ink underline"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                            {statusTransitions[item.status]?.map((next) => (
+                                                                <button
+                                                                    key={next}
+                                                                    onClick={() => updateStatus(item.id, next)}
+                                                                    className="text-xs text-ink hover:text-ink/80 underline font-medium capitalize"
+                                                                >
+                                                                    → {next}
+                                                                </button>
+                                                            ))}
+                                                            {item.platform && (
+                                                                <span className="text-xs text-muted">{item.platform}</span>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
                                 )}
                             </div>
 
-                            {/* Sessions */}
                             {sessions.length > 0 && (
                                 <div className="mt-4 rounded-xl border border-line bg-white p-5">
                                     <h2 className="text-sm font-bold mb-3">Past Conversations</h2>

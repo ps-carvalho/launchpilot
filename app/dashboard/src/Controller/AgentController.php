@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Dashboard\Controller;
 
 use App\Dashboard\Service\AgentChatService;
+use App\Dashboard\Service\EmbeddingService;
+use App\Dashboard\Service\GoogleSearchConsoleService;
+use App\Dashboard\Service\UserSettingsService;
 use App\Dashboard\Service\VectorSearchService;
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
@@ -25,6 +28,7 @@ class AgentController
         private readonly QueryBuilderFactoryInterface $queryFactory,
         private readonly AgentChatService $chatService,
         private readonly VectorSearchService $vectorSearch,
+        private readonly UserSettingsService $userSettings,
     ) {}
 
     #[Get('/api/campaigns/{campaignId}/agents/{agentType}/session')]
@@ -65,13 +69,20 @@ class AgentController
             return Response::json(['error' => 'Message is required.'], 422);
         }
 
-        // Verify campaign belongs to user's workspace
+        // Rate limiting
+        if (!$this->userSettings->canRunAgent($userId)) {
+            $remaining = $this->userSettings->getRemainingRuns($userId);
+            return Response::json([
+                'error' => 'Daily agent run limit reached. Upgrade to Pro for unlimited usage.',
+                'remaining' => $remaining,
+            ], 429);
+        }
+
         $campaign = $this->getCampaign($campaignId, $userId);
         if ($campaign === null) {
             return Response::json(['error' => 'Campaign not found.'], 404);
         }
 
-        // Get or create session
         $session = $this->queryFactory->create()->table('agent_sessions')
             ->where('campaign_id', '=', $campaignId)
             ->where('agent_type', '=', $agentType)
@@ -87,17 +98,14 @@ class AgentController
             $history = json_decode($session['messages'] ?? '[]', true);
         }
 
-        // Get KB context via vector search
         $kbContext = [];
         $workspaceId = (int) $campaign['workspace_id'];
 
-        // Embed the user's message to find relevant KB chunks
-        $embeddings = (new \App\Dashboard\Service\EmbeddingService())->embed([$message]);
+        $embeddings = (new EmbeddingService())->embed([$message]);
         if ($embeddings !== null && !empty($embeddings[0])) {
             $kbContext = $this->vectorSearch->search($embeddings[0], 3, $workspaceId);
         }
 
-        // If vector search returns nothing, fall back to raw document text
         if (empty($kbContext)) {
             $docs = $this->queryFactory->create()->table('knowledge_documents')
                 ->where('workspace_id', '=', $workspaceId)
@@ -112,14 +120,47 @@ class AgentController
             }
         }
 
-        // Call the agent
-        $response = $this->chatService->chat($agentType, $message, $history, $kbContext);
+        // For SEO agent, try to include GSC data
+        if ($agentType === 'seo') {
+            $settings = $this->userSettings->getOrCreate($userId);
+            if (!empty($settings['gsc_refresh_token'])) {
+                $gscService = new GoogleSearchConsoleService($this->queryFactory);
+                $tokens = $gscService->refreshToken($settings['gsc_refresh_token']);
+                if ($tokens !== null && !empty($tokens['access_token'])) {
+                    $sites = $gscService->listSites($tokens['access_token']);
+                    if (!empty($sites[0]['siteUrl'])) {
+                        $data = $gscService->getSearchAnalytics(
+                            $tokens['access_token'],
+                            $sites[0]['siteUrl'],
+                            date('Y-m-d', strtotime('-30 days')),
+                            date('Y-m-d')
+                        );
+                        if (!empty($data)) {
+                            $gscText = "Google Search Console Data (last 30 days):\n";
+                            foreach (array_slice($data, 0, 10) as $row) {
+                                $query = $row['keys'][0] ?? 'unknown';
+                                $clicks = $row['clicks'] ?? 0;
+                                $impressions = $row['impressions'] ?? 0;
+                                $ctr = round(($row['ctr'] ?? 0) * 100, 2);
+                                $position = round($row['position'] ?? 0, 1);
+                                $gscText .= "- Query: '{$query}' | Clicks: {$clicks} | Impressions: {$impressions} | CTR: {$ctr}% | Position: {$position}\n";
+                            }
+                            $kbContext[] = [
+                                'original_name' => 'Google Search Console',
+                                'chunk_text' => $gscText,
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+
+        $response = $this->chatService->chat($userId, $agentType, $message, $history, $kbContext);
 
         if ($response === null) {
             return Response::json(['error' => 'Failed to get response from agent.'], 500);
         }
 
-        // Save messages to session
         $history[] = ['role' => 'user', 'content' => $message, 'timestamp' => date('c')];
         $history[] = ['role' => 'assistant', 'content' => $response['content'], 'timestamp' => date('c')];
 
@@ -139,9 +180,12 @@ class AgentController
                 ]);
         }
 
+        $this->userSettings->incrementRunCount($userId);
+
         return Response::json([
             'message' => $response,
             'session_id' => $sessionId,
+            'remaining_runs' => $this->userSettings->getRemainingRuns($userId),
         ]);
     }
 
@@ -161,7 +205,6 @@ class AgentController
             return Response::json(['error' => 'Campaign not found.'], 404);
         }
 
-        // Get the latest session for this agent
         $session = $this->queryFactory->create()->table('agent_sessions')
             ->where('campaign_id', '=', $campaignId)
             ->where('agent_type', '=', $agentType)

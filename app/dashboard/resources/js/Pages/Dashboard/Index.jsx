@@ -1,7 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useEffect } from 'react';
 
-export default function DashboardIndex({ user, workspaces, campaigns, documents, hasCompletedOnboarding }) {
+export default function DashboardIndex({ user, workspaces, campaigns, documents, hasCompletedOnboarding, usage }) {
     useEffect(() => {
         if (!hasCompletedOnboarding) {
             router.visit('/onboarding');
@@ -25,8 +25,19 @@ export default function DashboardIndex({ user, workspaces, campaigns, documents,
                             </span>
                         </div>
                         <div className="flex items-center gap-4">
+                            {usage && usage.tier === 'free' && usage.remaining >= 0 && (
+                                <span className="text-xs rounded-full bg-amber-50 px-2.5 py-1 text-amber-700 font-medium">
+                                    {usage.remaining}/10 runs today
+                                </span>
+                            )}
+                            {usage && usage.tier === 'pro' && (
+                                <span className="text-xs rounded-full bg-green-50 px-2.5 py-1 text-green-700 font-medium">
+                                    Pro
+                                </span>
+                            )}
                             <span className="text-sm text-muted">{user?.name}</span>
                             <Link href="/knowledge-base" className="text-sm text-muted hover:text-ink">Knowledge Base</Link>
+                            <Link href="/settings" className="text-sm text-muted hover:text-ink">Settings</Link>
                             <a href="/logout" className="text-sm font-semibold text-muted hover:text-ink">
                                 Log out
                             </a>
