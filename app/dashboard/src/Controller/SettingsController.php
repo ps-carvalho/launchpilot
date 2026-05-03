@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Dashboard\Controller;
 
 use App\Dashboard\Authorization\WorkspaceAuthorization;
-use App\Dashboard\Helper\JsonInput;
+use App\Dashboard\Http\RequestBodyParser;
 use App\Dashboard\Service\ExportService;
 use App\Dashboard\Service\GoogleSearchConsoleService;
 use App\Dashboard\Service\UserSettingsService;
@@ -34,6 +34,7 @@ class SettingsController
         private readonly ExportService $exportService,
         private readonly WorkspaceAuthorization $workspaceAuth,
         private readonly SessionInterface $session,
+        private readonly RequestBodyParser $bodyParser,
     ) {}
 
     #[Get('/settings')]
@@ -131,7 +132,7 @@ class SettingsController
             return Response::json(['error' => 'Premium feature. Upgrade to Pro.'], 403);
         }
 
-        $key = JsonInput::get($request, 'api_key');
+        $key = $this->bodyParser->get($request, 'api_key');
         $this->queryFactory->create()->table('user_settings')
             ->where('user_id', '=', $userId)
             ->update([
@@ -151,7 +152,7 @@ class SettingsController
             return Response::json(['error' => 'Premium feature. Upgrade to Pro.'], 403);
         }
 
-        $prompts = JsonInput::get($request, 'prompts', []);
+        $prompts = $this->bodyParser->get($request, 'prompts', []);
         $this->userSettings->updateCustomPrompts($userId, $prompts);
 
         return Response::json(['success' => true]);

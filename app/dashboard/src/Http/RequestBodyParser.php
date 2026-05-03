@@ -2,13 +2,20 @@
 
 declare(strict_types=1);
 
-namespace App\Dashboard\Helper;
+namespace App\Dashboard\Http;
 
 use Marko\Routing\Http\Request;
 
-class JsonInput
+/**
+ * Parses request bodies that may be sent as either form-encoded or JSON.
+ *
+ * This is a workaround for Marko's Request class, which only populates
+ * $_POST for form-encoded submissions and does not parse JSON bodies
+ * for POST requests (only PUT/PATCH/DELETE).
+ */
+class RequestBodyParser
 {
-    public static function get(Request $request, string $key, mixed $default = null): mixed
+    public function get(Request $request, string $key, mixed $default = null): mixed
     {
         $value = $request->post($key);
         if ($value !== null) {
@@ -23,7 +30,7 @@ class JsonInput
         return $default;
     }
 
-    public static function all(Request $request): array
+    public function all(Request $request): array
     {
         $post = $request->post();
         if (!empty($post)) {

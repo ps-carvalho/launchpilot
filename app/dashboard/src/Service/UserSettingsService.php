@@ -23,7 +23,7 @@ class UserSettingsService
                 'user_id' => $userId,
                 'tier' => 'free',
                 'daily_runs_used' => 0,
-                'runs_reset_at' => date('Y-m-d H:i:s'),
+                'runs_reset_at' => gmdate('Y-m-d H:i:s'),
             ]);
 
             $settings = $this->queryFactory->create()->table('user_settings')
@@ -31,14 +31,13 @@ class UserSettingsService
                 ->first();
         }
 
-        // Reset counter if it's a new day (UTC)
         $resetAt = $settings['runs_reset_at'] ?? null;
-        if ($resetAt === null || date('Y-m-d', strtotime($resetAt)) !== date('Y-m-d')) {
+        if ($resetAt === null || gmdate('Y-m-d', strtotime($resetAt . ' UTC')) !== gmdate('Y-m-d')) {
             $this->queryFactory->create()->table('user_settings')
                 ->where('user_id', '=', $userId)
                 ->update([
                     'daily_runs_used' => 0,
-                    'runs_reset_at' => date('Y-m-d H:i:s'),
+                    'runs_reset_at' => gmdate('Y-m-d H:i:s'),
                 ]);
             $settings['daily_runs_used'] = 0;
         }
@@ -49,6 +48,11 @@ class UserSettingsService
     public function incrementRunCount(int $userId): void
     {
         $settings = $this->getOrCreate($userId);
+
+        if ($settings['tier'] !== 'pro' && (int) $settings['daily_runs_used'] >= 10) {
+            throw new \RuntimeException('Rate limit exceeded.');
+        }
+
         $this->queryFactory->create()->table('user_settings')
             ->where('user_id', '=', $userId)
             ->update([
@@ -72,7 +76,7 @@ class UserSettingsService
         $settings = $this->getOrCreate($userId);
 
         if ($settings['tier'] === 'pro') {
-            return -1; // unlimited
+            return -1;
         }
 
         return max(0, 10 - (int) $settings['daily_runs_used']);
@@ -82,7 +86,6 @@ class UserSettingsService
     {
         $settings = $this->getOrCreate($userId);
 
-        // Pro users with BYOK
         if ($settings['tier'] === 'pro' && !empty($settings['openrouter_api_key'])) {
             return $settings['openrouter_api_key'];
         }

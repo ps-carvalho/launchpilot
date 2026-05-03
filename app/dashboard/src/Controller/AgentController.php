@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
-use App\Dashboard\Helper\JsonInput;
+use App\Dashboard\Http\RequestBodyParser;
 use App\Dashboard\Pipeline\AgentPipeline;
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
@@ -24,6 +24,7 @@ class AgentController
         private readonly AuthManager $auth,
         private readonly QueryBuilderFactoryInterface $queryFactory,
         private readonly AgentPipeline $agentPipeline,
+        private readonly RequestBodyParser $bodyParser,
     ) {}
 
     #[Get('/api/campaigns/{campaignId}/agents/{agentType}/session')]
@@ -58,7 +59,7 @@ class AgentController
     public function chat(Request $request, int $campaignId, string $agentType): Response
     {
         $userId = $this->auth->id() ?? 0;
-        $message = JsonInput::get($request, 'message');
+        $message = $this->bodyParser->get($request, 'message');
 
         if (empty($message)) {
             return Response::json(['error' => 'Message is required.'], 422);
@@ -82,8 +83,8 @@ class AgentController
     public function saveToCampaign(Request $request, int $campaignId, string $agentType): Response
     {
         $userId = $this->auth->id() ?? 0;
-        $content = JsonInput::get($request, 'content');
-        $platform = JsonInput::get($request, 'platform');
+        $content = $this->bodyParser->get($request, 'content');
+        $platform = $this->bodyParser->get($request, 'platform');
 
         if (empty($content)) {
             return Response::json(['error' => 'Content is required.'], 422);

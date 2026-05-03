@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Dashboard\Controller;
 
 use App\Dashboard\Authorization\WorkspaceAuthorization;
-use App\Dashboard\Helper\JsonInput;
+use App\Dashboard\Http\RequestBodyParser;
 use App\Dashboard\Service\KnowledgeBaseService;
 use App\Dashboard\Service\WebsiteScraper;
 use Marko\Authentication\AuthManager;
@@ -32,6 +32,7 @@ class OnboardingController
         private readonly KnowledgeBaseService $kbService,
         private readonly WorkspaceAuthorization $workspaceAuth,
         private readonly SessionInterface $session,
+        private readonly RequestBodyParser $bodyParser,
     ) {}
 
     #[Get('/onboarding')]
@@ -53,7 +54,7 @@ class OnboardingController
             return Response::redirect('/dashboard');
         }
 
-        $url = JsonInput::get($request, 'url');
+        $url = $this->bodyParser->get($request, 'url');
 
         if (empty($url)) {
             $this->session->flash()->add('error', 'Please enter a website URL.');
