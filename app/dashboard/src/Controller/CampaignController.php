@@ -94,6 +94,11 @@ class CampaignController
         $isPro = $this->usageQuota->tier($userId) === 'pro';
         $agentModels = $isPro ? $this->agentModelResolver->getUserModels($userId) : [];
 
+        $mediaAssets = $this->queryFactory->create()->table('media_assets')
+            ->where('campaign_id', '=', $id)
+            ->orderBy('created_at', 'DESC')
+            ->get();
+
         return $this->inertia->render($request, 'Campaign/Show', [
             'campaign' => $campaign,
             'contentItems' => $contentItems,
@@ -101,6 +106,8 @@ class CampaignController
             'remainingRuns' => $remainingRuns,
             'isPro' => $isPro,
             'agentModels' => $agentModels,
+            'mediaAssets' => $mediaAssets,
+            'modalityModels' => $this->agentModelResolver->availableModels(),
         ]);
     }
 

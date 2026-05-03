@@ -7,17 +7,17 @@ use Tests\FakeHttpClient;
 
 beforeEach(function () {
     $this->http = new FakeHttpClient();
-    $this->originalApiKey = $_ENV['OPENROUTER_API_KEY'] ?? null;
-    $_ENV['OPENROUTER_API_KEY'] = 'test-api-key';
+    $this->originalApiKey = getenv('OPENROUTER_API_KEY') ?: null;
+    putenv('OPENROUTER_API_KEY=test-api-key');
     $this->service = new EmbeddingService($this->http);
 });
 
 afterEach(function () {
     $this->http->reset();
     if ($this->originalApiKey !== null) {
-        $_ENV['OPENROUTER_API_KEY'] = $this->originalApiKey;
+        putenv('OPENROUTER_API_KEY=' . $this->originalApiKey);
     } else {
-        unset($_ENV['OPENROUTER_API_KEY']);
+        putenv('OPENROUTER_API_KEY');
     }
 });
 
@@ -55,7 +55,7 @@ describe('embed', function () {
     });
 
     it('returns null when API key is missing', function () {
-        $_ENV['OPENROUTER_API_KEY'] = '';
+        putenv('OPENROUTER_API_KEY=');
         $service = new EmbeddingService($this->http);
         $result = $service->embed(['Hello']);
 
@@ -64,7 +64,7 @@ describe('embed', function () {
     });
 
     it('returns null when API key is placeholder', function () {
-        $_ENV['OPENROUTER_API_KEY'] = 'sk-or-v1-REPLACE_ME';
+        putenv('OPENROUTER_API_KEY=sk-or-v1-REPLACE_ME');
         $service = new EmbeddingService($this->http);
         $result = $service->embed(['Hello']);
 

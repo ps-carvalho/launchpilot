@@ -13,6 +13,7 @@ use App\Dashboard\Repository\KnowledgeBaseRepository;
 use App\Dashboard\Service\AgentChatService;
 use App\Dashboard\Service\AgentModelResolver;
 use App\Dashboard\Service\AgentPromptRegistry;
+use App\Dashboard\Service\VideoGenerationService;
 use App\Dashboard\Service\ApiKeyResolver;
 use App\Dashboard\Service\EmbeddingService;
 use App\Dashboard\Service\GoogleSearchConsoleService;
@@ -43,10 +44,12 @@ beforeEach(function () {
     $workspaceAuth = new WorkspaceAuthorization($this->query());
     $campaignGate = new CampaignGate($this->query(), $workspaceAuth);
     $modelResolver = new AgentModelResolver($this->query());
+    $videoService = new VideoGenerationService($apiKeyResolver, $this->fakeHttp, $this->query());
 
     $this->pipeline = new AgentPipeline(
         $this->query(),
         $chatService,
+        $videoService,
         $registry,
         $usageQuota,
         $campaignGate,
@@ -124,7 +127,7 @@ describe('chat flow', function () {
             json_encode(['choices' => [['message' => ['content' => 'AI says hello']]]]),
         );
 
-        $result = $this->pipeline->run($userId, $campaignId, 'social', 'Write a post');
+        $result = $this->pipeline->run($userId, $campaignId, 'text', 'Write a post');
 
         expect($result['response']['content'])->toBe('AI says hello')
             ->and($result['session_id'])->toBeInt()
@@ -133,7 +136,7 @@ describe('chat flow', function () {
         // Verify session was persisted
         $session = $this->query()->create()->table('agent_sessions')
             ->where('campaign_id', '=', $campaignId)
-            ->where('agent_type', '=', 'social')
+            ->where('agent_type', '=', 'text')
             ->first();
 
         expect($session)->not->toBeNull();
@@ -159,7 +162,7 @@ describe('chat flow', function () {
 
         $sessionId = $this->query()->create()->table('agent_sessions')->insert([
             'campaign_id' => $campaignId,
-            'agent_type' => 'social',
+            'agent_type' => 'text',
             'user_id' => $userId,
             'messages' => json_encode($existingMessages),
         ]);
@@ -208,8 +211,7 @@ describe('chat flow', function () {
         $campaignId = $this->createCampaign($workspaceId);
         $this->createDocument($workspaceId, 'Our product helps small businesses grow.');
 
-        // No embedding API key set, so embed() returns null
-        putenv('OPENROUTER_API_KEY=');
+        // Embeddings endpoint not faked, so embed() returns null (fallback to raw docs)
 
         $this->fakeHttp->fake(
             'https://openrouter.ai/api/v1/chat/completions',
@@ -217,14 +219,14 @@ describe('chat flow', function () {
             json_encode(['choices' => [['message' => ['content' => 'Got it']]]]),
         );
 
-        $result = $this->pipeline->run($userId, $campaignId, 'content', 'Tell me about my product');
+        $result = $this->pipeline->run($userId, $campaignId, 'text', 'Tell me about my product');
 
         expect($result['response']['content'])->toBe('Got it');
     });
 });
 
 describe('agent types', function () {
-    it('handles social agent type', function () {
+    it('handles text modality', function () {
         $userId = $this->createUser();
         $workspaceId = $this->createWorkspace($userId);
         $campaignId = $this->createCampaign($workspaceId);
@@ -232,15 +234,15 @@ describe('agent types', function () {
         $this->fakeHttp->fake(
             'https://openrouter.ai/api/v1/chat/completions',
             200,
-            json_encode(['choices' => [['message' => ['content' => 'Social post']]]]),
+            json_encode(['choices' => [['message' => ['content' => 'Text response']]]]),
         );
 
-        $result = $this->pipeline->run($userId, $campaignId, 'social', 'Create a LinkedIn post');
+        $result = $this->pipeline->run($userId, $campaignId, 'text', 'Write something');
 
-        expect($result['response']['content'])->toBe('Social post');
+        expect($result['response']['content'])->toBe('Text response');
     });
 
-    it('handles content agent type', function () {
+    it('handles image modality', function () {
         $userId = $this->createUser();
         $workspaceId = $this->createWorkspace($userId);
         $campaignId = $this->createCampaign($workspaceId);
@@ -248,15 +250,15 @@ describe('agent types', function () {
         $this->fakeHttp->fake(
             'https://openrouter.ai/api/v1/chat/completions',
             200,
-            json_encode(['choices' => [['message' => ['content' => 'Blog post']]]]),
+            json_encode(['choices' => [['message' => ['content' => 'Image generated', 'images' => ['data:image/png;base64,abc123']]]]]),
         );
 
-        $result = $this->pipeline->run($userId, $campaignId, 'content', 'Write a blog');
+        $result = $this->pipeline->run($userId, $campaignId, 'image', 'A cat');
 
-        expect($result['response']['content'])->toBe('Blog post');
+        expect($result['response']['content'])->toBe('Image generated');
     });
 
-    it('handles brainstorm agent type', function () {
+    it('maps legacy agent types to text modality', function () {
         $userId = $this->createUser();
         $workspaceId = $this->createWorkspace($userId);
         $campaignId = $this->createCampaign($workspaceId);
@@ -264,12 +266,12 @@ describe('agent types', function () {
         $this->fakeHttp->fake(
             'https://openrouter.ai/api/v1/chat/completions',
             200,
-            json_encode(['choices' => [['message' => ['content' => 'Ideas']]]]),
+            json_encode(['choices' => [['message' => ['content' => 'Legacy response']]]]),
         );
 
-        $result = $this->pipeline->run($userId, $campaignId, 'brainstorm', 'Brainstorm');
+        $result = $this->pipeline->run($userId, $campaignId, 'social', 'Legacy prompt');
 
-        expect($result['response']['content'])->toBe('Ideas');
+        expect($result['response']['content'])->toBe('Legacy response');
     });
 });
 
@@ -317,7 +319,7 @@ describe('SEO agent with GSC', function () {
             json_encode(['choices' => [['message' => ['content' => 'SEO analysis']]]]),
         );
 
-        $result = $this->pipeline->run($userId, $campaignId, 'seo', 'Analyze my SEO');
+        $result = $this->pipeline->run($userId, $campaignId, 'text', 'Analyze my SEO');
 
         expect($result['response']['content'])->toBe('SEO analysis');
 
@@ -367,7 +369,7 @@ describe('custom prompts', function () {
             json_encode(['choices' => [['message' => ['content' => 'Arrr!']]]]),
         );
 
-        $result = $this->pipeline->run($userId, $campaignId, 'social', 'Post something');
+        $result = $this->pipeline->run($userId, $campaignId, 'text', 'Post something');
 
         // Verify the request body contains our custom prompt
         $requests = $this->fakeHttp->requests();
@@ -381,7 +383,7 @@ describe('custom prompts', function () {
 
         expect($chatRequest)->not->toBeNull();
         $body = json_decode($chatRequest['body'], true);
-        expect($body['messages'][0]['content'])->toContain('You are a pirate marketer.');
+        expect($body['messages'][0]['content'])->toContain('pirate marketer');
         expect($result['response']['content'])->toBe('Arrr!');
     });
 });
