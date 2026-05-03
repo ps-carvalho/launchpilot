@@ -27,6 +27,11 @@
         "pestphp/pest": "^4.0",
         "marko/debugbar": "^0.5.0"
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
     "config": {
         "allow-plugins": {
             "pestphp/pest-plugin": true
