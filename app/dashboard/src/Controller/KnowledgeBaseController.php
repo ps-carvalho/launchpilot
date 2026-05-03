@@ -29,6 +29,8 @@ class KnowledgeBaseController
         private readonly KnowledgeBaseService $kbService,
         private readonly WorkspaceAuthorization $workspaceAuth,
         private readonly SessionInterface $session,
+        private readonly \App\Dashboard\Service\VectorSearchService $vectorSearch,
+        private readonly \App\Dashboard\Service\EmbeddingService $embedder,
     ) {}
 
     #[Get('/knowledge-base')]
@@ -116,6 +118,36 @@ class KnowledgeBaseController
         $this->session->flash()->add('success', "Document uploaded and split into {$result['chunks']} chunks.");
 
         return Response::redirect('/knowledge-base');
+    }
+
+    #[Get('/api/knowledge-base/search')]
+    public function search(Request $request): Response
+    {
+        $query = $request->query('q') ?? '';
+
+        if (trim($query) === '') {
+            return Response::json(['error' => 'Query is required.', 'results' => []], 422);
+        }
+
+        $userId = $this->auth->id() ?? 0;
+        $workspace = $this->workspaceAuth->firstWorkspaceFor($userId);
+
+        if ($workspace === null) {
+            return Response::json(['error' => 'No workspace found.', 'results' => []], 404);
+        }
+
+        $embeddings = $this->embedder->embed([$query]);
+
+        if ($embeddings === null || empty($embeddings[0])) {
+            return Response::json([
+                'error' => 'Embeddings unavailable. Check your OpenRouter API key.',
+                'results' => [],
+            ]);
+        }
+
+        $results = $this->vectorSearch->search($embeddings[0], 5, (int) $workspace['id']);
+
+        return Response::json(['results' => $results]);
     }
 
     #[Post('/knowledge-base/{id}/delete')]

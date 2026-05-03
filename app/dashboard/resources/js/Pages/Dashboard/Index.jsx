@@ -130,11 +130,16 @@ export default function DashboardIndex({ user, workspaces, campaigns, documents,
                                         <h3 className="mt-3 text-base font-bold">{campaign.title}</h3>
                                         {campaign.goal && <p className="mt-1 text-xs text-muted">{campaign.goal}</p>}
                                         <div className="mt-3 flex flex-wrap gap-1">
-                                            {(campaign.channels || []).map((channel) => (
-                                                <span key={channel} className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
-                                                    {channel}
-                                                </span>
-                                            ))}
+                                            {(() => {
+                                                const ch = typeof campaign.channels === 'string'
+                                                    ? JSON.parse(campaign.channels || '[]')
+                                                    : (campaign.channels || []);
+                                                return ch.map((channel) => (
+                                                    <span key={channel} className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                                                        {channel}
+                                                    </span>
+                                                ));
+                                            })()}
                                         </div>
                                     </Link>
                                 ))}

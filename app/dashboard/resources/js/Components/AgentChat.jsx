@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 
-export default function AgentChat({ campaignId, agentType, agentLabel, agentIcon }) {
+export default function AgentChat({ campaignId, agentType, agentLabel, agentIcon, remainingRuns, onRemainingRunsChange }) {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
@@ -58,6 +58,9 @@ export default function AgentChat({ campaignId, agentType, agentLabel, agentIcon
 
             if (data.message) {
                 setMessages((prev) => [...prev, data.message]);
+                if (typeof data.remaining_runs === 'number' && onRemainingRunsChange) {
+                    onRemainingRunsChange(data.remaining_runs);
+                }
             } else if (data.error) {
                 setMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${data.error}` }]);
             }
@@ -96,12 +99,22 @@ export default function AgentChat({ campaignId, agentType, agentLabel, agentIcon
     return (
         <div className="flex flex-col h-[600px] rounded-xl border border-line bg-white">
             <div className={`px-4 py-3 border-b border-line rounded-t-xl ${agentColors[agentType]?.split(' ')[0] || 'bg-slate-50'}`}>
-                <div className="flex items-center gap-2">
-                    <span className="text-lg">{agentIcon}</span>
-                    <div>
-                        <h3 className="text-sm font-bold">{agentLabel}</h3>
-                        <p className="text-xs text-muted">Conversational AI agent</p>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <span className="text-lg">{agentIcon}</span>
+                        <div>
+                            <h3 className="text-sm font-bold">{agentLabel}</h3>
+                            <p className="text-xs text-muted">Conversational AI agent</p>
+                        </div>
                     </div>
+                    {remainingRuns >= 0 && (
+                        <span className="text-xs font-medium text-slate-500">
+                            {remainingRuns} run{remainingRuns !== 1 ? 's' : ''} left today
+                        </span>
+                    )}
+                    {remainingRuns === -1 && (
+                        <span className="text-xs font-medium text-green-600">Unlimited</span>
+                    )}
                 </div>
             </div>
 

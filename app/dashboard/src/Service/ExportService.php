@@ -83,4 +83,52 @@ class ExportService
 
         return $md;
     }
+
+    public function exportCampaign(int $campaignId): string
+    {
+        $campaign = $this->queryFactory->create()->table('campaigns')
+            ->where('id', '=', $campaignId)
+            ->first();
+
+        if ($campaign === null) {
+            return "# Campaign Not Found\n\nThe requested campaign could not be found.";
+        }
+
+        $items = $this->queryFactory->create()->table('content_items')
+            ->where('campaign_id', '=', $campaignId)
+            ->orderBy('created_at', 'ASC')
+            ->get();
+
+        $md = "# {$campaign['title']}\n\n";
+        $md .= "Generated: " . date('Y-m-d H:i:s') . "\n\n";
+        $md .= "---\n\n";
+
+        if (!empty($campaign['description'])) {
+            $md .= "## Description\n\n{$campaign['description']}\n\n";
+        }
+
+        if (!empty($campaign['goal'])) {
+            $md .= "## Goal\n\n{$campaign['goal']}\n\n";
+        }
+
+        $md .= "## Content Items\n\n";
+
+        if (empty($items)) {
+            $md .= "*No content items yet.*\n\n";
+        } else {
+            foreach ($items as $item) {
+                $typeLabel = str_replace('_', ' ', $item['type'] ?? 'content');
+                $typeLabel = ucwords($typeLabel);
+                $platform = $item['platform'] ? " ({$item['platform']})" : '';
+                $md .= "### {$typeLabel}{$platform} — {$item['status']}\n\n";
+                if (!empty($item['published_at'])) {
+                    $md .= "*Published: {$item['published_at']}*\n\n";
+                }
+                $md .= $item['content'] . "\n\n";
+                $md .= "---\n\n";
+            }
+        }
+
+        return $md;
+    }
 }

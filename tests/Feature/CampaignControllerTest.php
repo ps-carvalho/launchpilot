@@ -119,6 +119,25 @@ describe('show', function () {
         expect($response->statusCode())->toBe(200);
     });
 
+    it('includes remaining runs in view data', function () {
+        $userId = $this->createUser();
+        $this->loginAsUser($userId);
+        $wsId = $this->createWorkspace($userId);
+        $campaignId = $this->createCampaign($wsId, 'Test Campaign');
+
+        $request = new \Marko\Routing\Http\Request(
+            server: ['REQUEST_METHOD' => 'GET'],
+            query: [],
+            post: [],
+            body: '',
+        );
+
+        $response = $this->controller->show($request, $campaignId);
+        $body = $response->body();
+
+        expect($body)->toContain('remainingRuns');
+    });
+
     it('redirects for unauthorized campaign', function () {
         $userA = $this->createUser('User A', 'a@example.com');
         $this->loginAsUser($userA);

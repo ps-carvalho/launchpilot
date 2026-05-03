@@ -211,9 +211,13 @@ class SettingsController
 
         $markdown = $this->exportService->exportKnowledgeBase((int) $workspace['id']);
 
-        return Response::make($markdown, 200, [
-            'Content-Type' => 'text/markdown; charset=utf-8',
-            'Content-Disposition' => 'attachment; filename="launchpilot-knowledge-base.md"',
-        ]);
+        return new Response(
+            body: $markdown,
+            statusCode: 200,
+            headers: [
+                'Content-Type' => 'text/markdown; charset=utf-8',
+                'Content-Disposition' => 'attachment; filename="launchpilot-knowledge-base.md"',
+            ],
+        );
     }
 }

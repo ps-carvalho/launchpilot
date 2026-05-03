@@ -6,6 +6,8 @@ namespace App\Dashboard\Controller;
 
 use App\Dashboard\Authorization\WorkspaceAuthorization;
 use App\Dashboard\Http\RequestBodyParser;
+use App\Dashboard\Service\ExportService;
+use App\Dashboard\Service\UserSettingsService;
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
@@ -30,6 +32,8 @@ class CampaignController
         private readonly QueryBuilderFactoryInterface $queryFactory,
         private readonly WorkspaceAuthorization $workspaceAuth,
         private readonly RequestBodyParser $bodyParser,
+        private readonly UserSettingsService $userSettings,
+        private readonly ExportService $exportService,
     ) {}
 
     #[Get('/campaigns')]
@@ -62,6 +66,21 @@ class CampaignController
         ]);
     }
 
+    #[Get('/campaigns/create')]
+    public function create(Request $request): Response
+    {
+        $userId = $this->auth->id() ?? 0;
+        $workspaces = $this->workspaceAuth->workspacesFor($userId);
+
+        if (empty($workspaces)) {
+            return Response::redirect('/dashboard');
+        }
+
+        return $this->inertia->render($request, 'Campaign/Create', [
+            'workspaces' => $workspaces,
+        ]);
+    }
+
     #[Get('/campaigns/{id}')]
     public function show(Request $request, int $id): Response
     {
@@ -84,26 +103,37 @@ class CampaignController
             ->orderBy('updated_at', 'DESC')
             ->get();
 
+        $remainingRuns = $this->userSettings->getRemainingRuns($userId);
+
         return $this->inertia->render($request, 'Campaign/Show', [
             'campaign' => $campaign,
             'contentItems' => $contentItems,
             'sessions' => $sessions,
+            'remainingRuns' => $remainingRuns,
         ]);
     }
 
-    #[Get('/campaigns/create')]
-    public function create(Request $request): Response
+    #[Get('/campaigns/{id}/export')]
+    public function export(int $id): Response
     {
         $userId = $this->auth->id() ?? 0;
-        $workspaces = $this->workspaceAuth->workspacesFor($userId);
 
-        if (empty($workspaces)) {
-            return Response::redirect('/dashboard');
+        $campaign = $this->workspaceAuth->campaignFor($userId, $id);
+        if ($campaign === null) {
+            return Response::redirect('/campaigns');
         }
 
-        return $this->inertia->render($request, 'Campaign/Create', [
-            'workspaces' => $workspaces,
-        ]);
+        $markdown = $this->exportService->exportCampaign($id);
+        $filename = preg_replace('/[^a-z0-9]+/', '-', strtolower($campaign['title'])) . '-export.md';
+
+        return new Response(
+            body: $markdown,
+            statusCode: 200,
+            headers: [
+                'Content-Type' => 'text/markdown; charset=utf-8',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ],
+        );
     }
 
     #[Post('/campaigns')]
