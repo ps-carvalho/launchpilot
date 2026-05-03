@@ -4,13 +4,8 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
-use App\Dashboard\Authorization\WorkspaceAuthorization;
 use App\Dashboard\Helper\JsonInput;
-use App\Dashboard\Service\AgentChatService;
-use App\Dashboard\Service\EmbeddingService;
-use App\Dashboard\Service\GoogleSearchConsoleService;
-use App\Dashboard\Service\UserSettingsService;
-use App\Dashboard\Service\VectorSearchService;
+use App\Dashboard\Pipeline\AgentPipeline;
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
@@ -28,10 +23,7 @@ class AgentController
     public function __construct(
         private readonly AuthManager $auth,
         private readonly QueryBuilderFactoryInterface $queryFactory,
-        private readonly AgentChatService $chatService,
-        private readonly VectorSearchService $vectorSearch,
-        private readonly UserSettingsService $userSettings,
-        private readonly WorkspaceAuthorization $workspaceAuth,
+        private readonly AgentPipeline $agentPipeline,
     ) {}
 
     #[Get('/api/campaigns/{campaignId}/agents/{agentType}/session')]
@@ -72,121 +64,17 @@ class AgentController
             return Response::json(['error' => 'Message is required.'], 422);
         }
 
-        if (!$this->userSettings->canRunAgent($userId)) {
-            $remaining = $this->userSettings->getRemainingRuns($userId);
-            return Response::json([
-                'error' => 'Daily agent run limit reached. Upgrade to Pro for unlimited usage.',
-                'remaining' => $remaining,
-            ], 429);
+        try {
+            $result = $this->agentPipeline->run($userId, $campaignId, $agentType, $message);
+        } catch (\RuntimeException $e) {
+            $status = str_contains($e->getMessage(), 'limit reached') ? 429 : 500;
+            return Response::json(['error' => $e->getMessage()], $status);
         }
-
-        $campaign = $this->workspaceAuth->campaignFor($userId, $campaignId);
-        if ($campaign === null) {
-            return Response::json(['error' => 'Campaign not found.'], 404);
-        }
-
-        $session = $this->queryFactory->create()->table('agent_sessions')
-            ->where('campaign_id', '=', $campaignId)
-            ->where('agent_type', '=', $agentType)
-            ->where('user_id', '=', $userId)
-            ->orderBy('created_at', 'DESC')
-            ->first();
-
-        $history = [];
-        $sessionId = null;
-
-        if ($session !== null) {
-            $sessionId = (int) $session['id'];
-            $history = json_decode($session['messages'] ?? '[]', true);
-        }
-
-        $kbContext = [];
-        $workspaceId = (int) $campaign['workspace_id'];
-
-        $embeddings = (new EmbeddingService())->embed([$message]);
-        if ($embeddings !== null && !empty($embeddings[0])) {
-            $kbContext = $this->vectorSearch->search($embeddings[0], 3, $workspaceId);
-        }
-
-        if (empty($kbContext)) {
-            $docs = $this->queryFactory->create()->table('knowledge_documents')
-                ->where('workspace_id', '=', $workspaceId)
-                ->limit(3)
-                ->get();
-
-            foreach ($docs as $doc) {
-                $kbContext[] = [
-                    'original_name' => $doc['original_name'],
-                    'chunk_text' => substr($doc['raw_text'], 0, 2000),
-                ];
-            }
-        }
-
-        if ($agentType === 'seo') {
-            $settings = $this->userSettings->getOrCreate($userId);
-            if (!empty($settings['gsc_refresh_token'])) {
-                $gscService = new GoogleSearchConsoleService($this->queryFactory);
-                $tokens = $gscService->refreshToken($settings['gsc_refresh_token']);
-                if ($tokens !== null && !empty($tokens['access_token'])) {
-                    $sites = $gscService->listSites($tokens['access_token']);
-                    if (!empty($sites[0]['siteUrl'])) {
-                        $data = $gscService->getSearchAnalytics(
-                            $tokens['access_token'],
-                            $sites[0]['siteUrl'],
-                            date('Y-m-d', strtotime('-30 days')),
-                            date('Y-m-d')
-                        );
-                        if (!empty($data)) {
-                            $gscText = "Google Search Console Data (last 30 days):\n";
-                            foreach (array_slice($data, 0, 10) as $row) {
-                                $query = $row['keys'][0] ?? 'unknown';
-                                $clicks = $row['clicks'] ?? 0;
-                                $impressions = $row['impressions'] ?? 0;
-                                $ctr = round(($row['ctr'] ?? 0) * 100, 2);
-                                $position = round($row['position'] ?? 0, 1);
-                                $gscText .= "- Query: '{$query}' | Clicks: {$clicks} | Impressions: {$impressions} | CTR: {$ctr}% | Position: {$position}\n";
-                            }
-                            $kbContext[] = [
-                                'original_name' => 'Google Search Console',
-                                'chunk_text' => $gscText,
-                            ];
-                        }
-                    }
-                }
-            }
-        }
-
-        $response = $this->chatService->chat($userId, $agentType, $message, $history, $kbContext);
-
-        if ($response === null) {
-            return Response::json(['error' => 'Failed to get response from agent.'], 500);
-        }
-
-        $history[] = ['role' => 'user', 'content' => $message, 'timestamp' => date('c')];
-        $history[] = ['role' => 'assistant', 'content' => $response['content'], 'timestamp' => date('c')];
-
-        if ($sessionId === null) {
-            $sessionId = $this->queryFactory->create()->table('agent_sessions')->insert([
-                'campaign_id' => $campaignId,
-                'agent_type' => $agentType,
-                'user_id' => $userId,
-                'messages' => json_encode($history),
-            ]);
-        } else {
-            $this->queryFactory->create()->table('agent_sessions')
-                ->where('id', '=', $sessionId)
-                ->update([
-                    'messages' => json_encode($history),
-                    'updated_at' => date('Y-m-d H:i:s'),
-                ]);
-        }
-
-        $this->userSettings->incrementRunCount($userId);
 
         return Response::json([
-            'message' => $response,
-            'session_id' => $sessionId,
-            'remaining_runs' => $this->userSettings->getRemainingRuns($userId),
+            'message' => $result['response'],
+            'session_id' => $result['session_id'],
+            'remaining_runs' => $result['remaining_runs'],
         ]);
     }
 
@@ -199,11 +87,6 @@ class AgentController
 
         if (empty($content)) {
             return Response::json(['error' => 'Content is required.'], 422);
-        }
-
-        $campaign = $this->workspaceAuth->campaignFor($userId, $campaignId);
-        if ($campaign === null) {
-            return Response::json(['error' => 'Campaign not found.'], 404);
         }
 
         $session = $this->queryFactory->create()->table('agent_sessions')
