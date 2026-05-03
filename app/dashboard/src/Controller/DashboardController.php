@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
+use App\Dashboard\Authorization\WorkspaceAuthorization;
+use App\Dashboard\Service\UserSettingsService;
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
@@ -22,6 +24,8 @@ class DashboardController
         private readonly Inertia $inertia,
         private readonly AuthManager $auth,
         private readonly QueryBuilderFactoryInterface $queryFactory,
+        private readonly UserSettingsService $userSettings,
+        private readonly WorkspaceAuthorization $workspaceAuth,
     ) {}
 
     #[Get('/dashboard')]
@@ -30,12 +34,7 @@ class DashboardController
         $userId = $this->auth->id() ?? 0;
         $userRow = $this->queryFactory->create()->table('users')->where('id', '=', $userId)->first();
 
-        $workspaces = $this->queryFactory->create()->table('workspace_user')
-            ->select('workspaces.id', 'workspaces.name', 'workspaces.slug')
-            ->join('workspaces', 'workspace_user.workspace_id', '=', 'workspaces.id')
-            ->where('workspace_user.user_id', '=', $userId)
-            ->get();
-
+        $workspaces = $this->workspaceAuth->workspacesFor($userId);
         $workspaceIds = array_column($workspaces, 'id');
 
         $campaigns = [];
@@ -44,6 +43,7 @@ class DashboardController
         if (!empty($workspaceIds)) {
             $campaigns = $this->queryFactory->create()->table('campaigns')
                 ->whereIn('workspace_id', $workspaceIds)
+                ->whereNull('archived_at')
                 ->orderBy('created_at', 'DESC')
                 ->get();
 
@@ -64,6 +64,10 @@ class DashboardController
             'campaigns' => $campaigns,
             'documents' => $documents,
             'hasCompletedOnboarding' => $hasCompletedOnboarding,
+            'usage' => [
+                'remaining' => $this->userSettings->getRemainingRuns($userId),
+                'tier' => $this->userSettings->getOrCreate($userId)['tier'] ?? 'free',
+            ],
         ]);
     }
 }
