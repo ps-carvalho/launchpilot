@@ -43,6 +43,7 @@ class DashboardController
         if (!empty($workspaceIds)) {
             $campaigns = $this->queryFactory->create()->table('campaigns')
                 ->whereIn('workspace_id', $workspaceIds)
+                ->whereNull('archived_at')
                 ->orderBy('created_at', 'DESC')
                 ->get();
 

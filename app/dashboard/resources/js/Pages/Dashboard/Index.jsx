@@ -91,10 +91,18 @@ export default function DashboardIndex({ user, workspaces, campaigns, documents,
                     {/* Campaigns */}
                     <section>
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold">Campaigns</h2>
-                            <button className="rounded-lg bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink/90">
-                                + New campaign
-                            </button>
+                            <div>
+                                <h2 className="text-lg font-bold">Campaigns</h2>
+                                <p className="text-sm text-muted">Your active marketing initiatives</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Link href="/campaigns" className="text-sm font-medium text-muted hover:text-ink">
+                                    View all →
+                                </Link>
+                                <Link href="/campaigns/create" className="rounded-lg bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink/90">
+                                    + New campaign
+                                </Link>
+                            </div>
                         </div>
 
                         {campaigns.length === 0 ? (
@@ -102,9 +110,9 @@ export default function DashboardIndex({ user, workspaces, campaigns, documents,
                                 <div className="text-4xl mb-4">📋</div>
                                 <h3 className="text-base font-bold">No campaigns yet</h3>
                                 <p className="mt-1 text-sm text-muted">Create your first campaign to start planning your marketing.</p>
-                                <button className="mt-6 rounded-lg bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-ink/90">
+                                <Link href="/campaigns/create" className="mt-6 rounded-lg bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-ink/90 inline-block">
                                     Create your first campaign
-                                </button>
+                                </Link>
                             </div>
                         ) : (
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

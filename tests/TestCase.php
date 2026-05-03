@@ -21,9 +21,34 @@ abstract class TestCase extends BaseTestCase
         if (self::$app === null) {
             $this->setTestEnv();
             self::$app = Application::boot(dirname(__DIR__));
+            // Replace session and auth with fakes for testing
+            $fakeSession = new FakeSession();
+            self::$app->container->instance(\Marko\Session\Contracts\SessionInterface::class, $fakeSession);
+            self::$app->container->instance(\Marko\Authentication\AuthManager::class, new FakeAuthManager());
+
+            // Re-create Inertia singleton with fake session
+            $config = self::$app->container->get(\Marko\Config\ConfigRepositoryInterface::class);
+            $vite = self::$app->container->get(\Marko\Vite\Vite::class);
+            $ssrClient = self::$app->container->get(\Marko\Inertia\Ssr\SsrClient::class);
+            self::$app->container->instance(\Marko\Inertia\Inertia::class, new \Marko\Inertia\Inertia($config, $vite, $ssrClient, $fakeSession));
         }
 
         $this->freshDatabase();
+
+        // Clear workspace auth cache between tests
+        try {
+            $this->container()->get(\App\Dashboard\Authorization\WorkspaceAuthorization::class)->clearCache();
+        } catch (\Throwable) {
+            // Ignore if not available
+        }
+    }
+
+    protected function loginAsUser(int $userId): void
+    {
+        $auth = $this->container()->get(\Marko\Authentication\AuthManager::class);
+        if ($auth instanceof FakeAuthManager) {
+            $auth->setUserId($userId);
+        }
     }
 
     protected function tearDown(): void
@@ -37,6 +62,15 @@ abstract class TestCase extends BaseTestCase
                 }
             } catch (\Throwable) {
                 // Ignore if handler isn't available
+            }
+
+            try {
+                $auth = $this->container()->get(\Marko\Authentication\AuthManager::class);
+                if ($auth instanceof FakeAuthManager) {
+                    $auth->setUserId(0);
+                }
+            } catch (\Throwable) {
+                // Ignore
             }
         }
 
