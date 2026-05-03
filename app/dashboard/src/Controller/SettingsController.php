@@ -9,7 +9,7 @@ use App\Dashboard\Service\ExportService;
 use App\Dashboard\Service\GoogleSearchConsoleService;
 use App\Dashboard\Service\UserSettingsService;
 use Marko\Authentication\AuthManager;
-use Marko\Authentication\Middleware\AuthManager as AuthMiddleware;
+use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Inertia\Inertia;
 use Marko\Inertia\Middleware\InertiaMiddleware;
