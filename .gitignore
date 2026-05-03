@@ -2,3 +2,4 @@ node_modules
 vendor
 storage.env
 storage/
+.env
