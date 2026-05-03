@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
+use App\Dashboard\Service\KnowledgeBaseService;
 use App\Dashboard\Service\WebsiteScraper;
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
@@ -26,6 +27,7 @@ class OnboardingController
         private readonly AuthManager $auth,
         private readonly QueryBuilderFactoryInterface $queryFactory,
         private readonly WebsiteScraper $scraper,
+        private readonly KnowledgeBaseService $kbService,
         private readonly SessionInterface $session,
     ) {}
 

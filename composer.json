@@ -19,7 +19,8 @@
         "marko/session": "^0.5",
         "marko/session-file": "^0.5",
         "marko/security": "^0.5",
-        "marko/encryption-openssl": "^0.5"
+        "marko/encryption-openssl": "^0.5",
+        "smalot/pdfparser": "^2.12"
     },
     "require-dev": {
         "marko/dev-server": "^0.5",
