@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
+use App\Dashboard\Authorization\WorkspaceAuthorization;
 use App\Dashboard\Helper\JsonInput;
 use App\Dashboard\Service\ExportService;
 use App\Dashboard\Service\GoogleSearchConsoleService;
@@ -31,6 +32,7 @@ class SettingsController
         private readonly UserSettingsService $userSettings,
         private readonly GoogleSearchConsoleService $gscService,
         private readonly ExportService $exportService,
+        private readonly WorkspaceAuthorization $workspaceAuth,
         private readonly SessionInterface $session,
     ) {}
 
@@ -200,12 +202,7 @@ class SettingsController
     public function export(): Response
     {
         $userId = $this->auth->id() ?? 0;
-
-        $workspace = $this->queryFactory->create()->table('workspace_user')
-            ->select('workspaces.id')
-            ->join('workspaces', 'workspace_user.workspace_id', '=', 'workspaces.id')
-            ->where('workspace_user.user_id', '=', $userId)
-            ->first();
+        $workspace = $this->workspaceAuth->firstWorkspaceFor($userId);
 
         if ($workspace === null) {
             return Response::redirect('/settings');

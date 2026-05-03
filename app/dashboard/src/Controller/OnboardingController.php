@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
+use App\Dashboard\Authorization\WorkspaceAuthorization;
 use App\Dashboard\Helper\JsonInput;
 use App\Dashboard\Service\KnowledgeBaseService;
 use App\Dashboard\Service\WebsiteScraper;
@@ -29,6 +30,7 @@ class OnboardingController
         private readonly QueryBuilderFactoryInterface $queryFactory,
         private readonly WebsiteScraper $scraper,
         private readonly KnowledgeBaseService $kbService,
+        private readonly WorkspaceAuthorization $workspaceAuth,
         private readonly SessionInterface $session,
     ) {}
 
@@ -65,12 +67,7 @@ class OnboardingController
             return Response::redirect('/onboarding');
         }
 
-        $userId = $this->auth->id() ?? 0;
-        $workspace = $this->queryFactory->create()->table('workspace_user')
-            ->select('workspaces.id')
-            ->join('workspaces', 'workspace_user.workspace_id', '=', 'workspaces.id')
-            ->where('workspace_user.user_id', '=', $userId)
-            ->first();
+        $workspace = $this->workspaceAuth->firstWorkspaceFor($this->auth->id() ?? 0);
 
         if ($workspace === null) {
             $this->session->flash()->add('error', 'No workspace found.');
@@ -83,7 +80,7 @@ class OnboardingController
             $data['body'] ? "Content:\n{$data['body']}" : null,
         ]));
 
-        $this->queryFactory->create()->table('knowledge_documents')->insert([
+        $documentId = $this->queryFactory->create()->table('knowledge_documents')->insert([
             'workspace_id' => $workspace['id'],
             'source_url' => $url,
             'original_name' => parse_url($url, PHP_URL_HOST) ?: $url,
@@ -95,6 +92,8 @@ class OnboardingController
             ]),
         ]);
 
+        $this->kbService->processScrapedDocument($documentId);
+
         $this->session->flash()->add('success', 'Website added to your knowledge base!');
 
         return Response::redirect('/dashboard');
@@ -103,12 +102,7 @@ class OnboardingController
     private function hasCompletedOnboarding(): bool
     {
         $userId = $this->auth->id() ?? 0;
-
-        $workspace = $this->queryFactory->create()->table('workspace_user')
-            ->select('workspaces.id')
-            ->join('workspaces', 'workspace_user.workspace_id', '=', 'workspaces.id')
-            ->where('workspace_user.user_id', '=', $userId)
-            ->first();
+        $workspace = $this->workspaceAuth->firstWorkspaceFor($userId);
 
         if ($workspace === null) {
             return false;

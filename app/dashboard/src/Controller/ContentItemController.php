@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
+use App\Dashboard\Authorization\WorkspaceAuthorization;
 use App\Dashboard\Helper\JsonInput;
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
@@ -13,7 +14,6 @@ use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
-use Marko\Session\Contracts\SessionInterface;
 use Marko\Session\Middleware\SessionMiddleware;
 
 #[Middleware([SessionMiddleware::class, AuthMiddleware::class, InertiaMiddleware::class])]
@@ -21,16 +21,16 @@ class ContentItemController
 {
     private const VALID_STATUSES = ['draft', 'approved', 'scheduled', 'published'];
     private const VALID_TRANSITIONS = [
-        'draft' => ['approved', 'draft'],
-        'approved' => ['scheduled', 'published', 'draft', 'approved'],
-        'scheduled' => ['published', 'draft', 'approved', 'scheduled'],
-        'published' => ['published'],
+        'draft' => ['approved'],
+        'approved' => ['scheduled', 'published', 'draft'],
+        'scheduled' => ['published', 'draft', 'approved'],
+        'published' => [],
     ];
 
     public function __construct(
         private readonly AuthManager $auth,
         private readonly QueryBuilderFactoryInterface $queryFactory,
-        private readonly SessionInterface $session,
+        private readonly WorkspaceAuthorization $workspaceAuth,
     ) {}
 
     #[Post('/api/content-items/{id}/status')]
@@ -42,7 +42,7 @@ class ContentItemController
             return Response::json(['error' => 'Invalid status.'], 422);
         }
 
-        $item = $this->findItem($id);
+        $item = $this->workspaceAuth->contentItemFor($this->auth->id() ?? 0, $id);
         if ($item === null) {
             return Response::json(['error' => 'Not found.'], 404);
         }
@@ -74,7 +74,7 @@ class ContentItemController
             return Response::json(['error' => 'Content is required.'], 422);
         }
 
-        $item = $this->findItem($id);
+        $item = $this->workspaceAuth->contentItemFor($this->auth->id() ?? 0, $id);
         if ($item === null) {
             return Response::json(['error' => 'Not found.'], 404);
         }
@@ -87,35 +87,5 @@ class ContentItemController
             ]);
 
         return Response::json(['success' => true]);
-    }
-
-    private function findItem(int $id): ?array
-    {
-        $userId = $this->auth->id() ?? 0;
-
-        $workspaceIds = $this->queryFactory->create()->table('workspace_user')
-            ->select('workspace_id')
-            ->where('user_id', '=', $userId)
-            ->get();
-
-        $ids = array_column($workspaceIds, 'workspace_id');
-        if (empty($ids)) {
-            return null;
-        }
-
-        $item = $this->queryFactory->create()->table('content_items')
-            ->where('id', '=', $id)
-            ->first();
-
-        if ($item === null) {
-            return null;
-        }
-
-        $campaign = $this->queryFactory->create()->table('campaigns')
-            ->where('id', '=', $item['campaign_id'])
-            ->whereIn('workspace_id', $ids)
-            ->first();
-
-        return $campaign !== null ? $item : null;
     }
 }

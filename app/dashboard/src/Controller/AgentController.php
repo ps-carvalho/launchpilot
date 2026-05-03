@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
+use App\Dashboard\Authorization\WorkspaceAuthorization;
 use App\Dashboard\Helper\JsonInput;
 use App\Dashboard\Service\AgentChatService;
 use App\Dashboard\Service\EmbeddingService;
@@ -30,6 +31,7 @@ class AgentController
         private readonly AgentChatService $chatService,
         private readonly VectorSearchService $vectorSearch,
         private readonly UserSettingsService $userSettings,
+        private readonly WorkspaceAuthorization $workspaceAuth,
     ) {}
 
     #[Get('/api/campaigns/{campaignId}/agents/{agentType}/session')]
@@ -70,7 +72,6 @@ class AgentController
             return Response::json(['error' => 'Message is required.'], 422);
         }
 
-        // Rate limiting
         if (!$this->userSettings->canRunAgent($userId)) {
             $remaining = $this->userSettings->getRemainingRuns($userId);
             return Response::json([
@@ -79,7 +80,7 @@ class AgentController
             ], 429);
         }
 
-        $campaign = $this->getCampaign($campaignId, $userId);
+        $campaign = $this->workspaceAuth->campaignFor($userId, $campaignId);
         if ($campaign === null) {
             return Response::json(['error' => 'Campaign not found.'], 404);
         }
@@ -121,7 +122,6 @@ class AgentController
             }
         }
 
-        // For SEO agent, try to include GSC data
         if ($agentType === 'seo') {
             $settings = $this->userSettings->getOrCreate($userId);
             if (!empty($settings['gsc_refresh_token'])) {
@@ -201,7 +201,7 @@ class AgentController
             return Response::json(['error' => 'Content is required.'], 422);
         }
 
-        $campaign = $this->getCampaign($campaignId, $userId);
+        $campaign = $this->workspaceAuth->campaignFor($userId, $campaignId);
         if ($campaign === null) {
             return Response::json(['error' => 'Campaign not found.'], 404);
         }
@@ -238,24 +238,5 @@ class AgentController
             'item_id' => $itemId,
             'message' => 'Content saved to campaign.',
         ]);
-    }
-
-    private function getCampaign(int $campaignId, int $userId): ?array
-    {
-        $workspaceIds = $this->queryFactory->create()->table('workspace_user')
-            ->select('workspace_id')
-            ->where('user_id', '=', $userId)
-            ->get();
-
-        $ids = array_column($workspaceIds, 'workspace_id');
-
-        if (empty($ids)) {
-            return null;
-        }
-
-        return $this->queryFactory->create()->table('campaigns')
-            ->where('id', '=', $campaignId)
-            ->whereIn('workspace_id', $ids)
-            ->first();
     }
 }
