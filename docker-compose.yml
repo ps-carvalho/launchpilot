@@ -11,6 +11,7 @@ services:
       POSTGRES_PASSWORD: launchpilot
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/initdb.d:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U launchpilot -d launchpilot"]
       interval: 5s
