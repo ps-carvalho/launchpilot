@@ -98,7 +98,7 @@ export default function DashboardIndex({ user, workspaces, campaigns, documents,
                         ) : (
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                                 {campaigns.map((campaign) => (
-                                    <div key={campaign.id} className="rounded-xl border border-line bg-white p-5">
+                                    <Link href={`/campaigns/${campaign.id}`} key={campaign.id} className="rounded-xl border border-line bg-white p-5 hover:border-ink/30 transition-colors block">
                                         <div className="flex items-center justify-between">
                                             <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                                                 campaign.status === 'active' ? 'bg-green-50 text-green-700' :
@@ -117,7 +117,7 @@ export default function DashboardIndex({ user, workspaces, campaigns, documents,
                                                 </span>
                                             ))}
                                         </div>
-                                    </div>
+                                    </Link>
                                 ))}
                             </div>
                         )}
