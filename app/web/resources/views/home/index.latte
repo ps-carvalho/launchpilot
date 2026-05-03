@@ -1,68 +1,130 @@
 {layout 'web::layouts/main'}
 
 {block content}
-<section class="mx-auto max-w-6xl px-6 py-16 md:py-24">
-    <div class="grid items-center gap-12 md:grid-cols-2">
-        <div>
-            <h1 class="text-4xl font-extrabold tracking-tight md:text-6xl">
-                Marketing plans built for owner-led businesses.
-            </h1>
-            <p class="mt-6 text-lg text-muted leading-relaxed">
-                Turn a business goal into weekly campaigns, content briefs, and follow-up actions without needing a full marketing team.
-            </p>
-            <div class="mt-8 flex flex-wrap gap-3">
-                <a href="/register" class="rounded-lg bg-ink px-5 py-3 text-sm font-bold text-white hover:bg-ink/90">Start for free</a>
-                <a href="/login" class="rounded-lg border border-line px-5 py-3 text-sm font-bold text-ink hover:bg-paper">Log in</a>
+<section class="relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-paper to-purple-50/30"></div>
+    <div class="relative mx-auto max-w-6xl px-6 py-20 md:py-28">
+        <div class="grid items-center gap-12 md:grid-cols-2">
+            <div class="animate-slide-up">
+                <div class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-1.5 text-xs font-semibold text-blue-600 mb-6">
+                    <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                    Now with AI Agent Chat
+                </div>
+                <h1 class="text-4xl font-extrabold tracking-tight md:text-5xl lg:text-6xl leading-tight">
+                    Your AI Marketing<br><span class="text-accent">Co-Pilot</span>
+                </h1>
+                <p class="mt-6 text-lg text-muted leading-relaxed max-w-lg">
+                    Turn business goals into weekly campaigns, content briefs, and follow-up actions. No marketing team required.
+                </p>
+                <div class="mt-8 flex flex-wrap gap-3">
+                    <a href="/register" class="rounded-button bg-ink px-6 py-3 text-sm font-bold text-white hover:bg-ink/90 shadow-elevation-2 hover:shadow-elevation-3 transition-all hover:-translate-y-0.5">Start for free</a>
+                    <a href="/login" class="rounded-button border border-line bg-white px-6 py-3 text-sm font-bold text-ink hover:bg-paper shadow-elevation-1 hover:shadow-elevation-2 transition-all hover:-translate-y-0.5">Log in</a>
+                </div>
+                <p class="mt-4 text-xs text-muted">Free tier includes 10 agent runs/day. No credit card required.</p>
             </div>
+
+            <aside class="animate-fade-in">
+                <div class="rounded-card bg-surface shadow-elevation-3 border border-line/60 overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-4 border-b border-line/60 bg-gradient-to-r from-blue-50/50 to-purple-50/30">
+                        <div class="flex items-center gap-2">
+                            <div class="h-2 w-2 rounded-full bg-red-400"></div>
+                            <div class="h-2 w-2 rounded-full bg-amber-400"></div>
+                            <div class="h-2 w-2 rounded-full bg-green-400"></div>
+                        </div>
+                        <div class="text-xs font-bold text-green-600 flex items-center gap-1">
+                            <span class="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                            AI plan ready
+                        </div>
+                    </div>
+                    <div class="p-5 space-y-3">
+                        <div class="flex items-center gap-3 rounded-button bg-paper border border-line/60 p-3 shadow-elevation-1 hover:shadow-elevation-2 transition-all hover:-translate-y-0.5 cursor-default">
+                            <div class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-xs font-bold">1</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-sm font-semibold">Spring product launch</div>
+                                <div class="text-xs text-muted">Email, social posts, landing copy</div>
+                            </div>
+                            <span class="rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-600">3 assets</span>
+                        </div>
+                        <div class="flex items-center gap-3 rounded-button bg-paper border border-line/60 p-3 shadow-elevation-1 hover:shadow-elevation-2 transition-all hover:-translate-y-0.5 cursor-default">
+                            <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold">2</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-sm font-semibold">Local prospect outreach</div>
+                                <div class="text-xs text-muted">Audience angles and outreach prompts</div>
+                            </div>
+                            <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-600">Ready</span>
+                        </div>
+                        <div class="flex items-center gap-3 rounded-button bg-paper border border-line/60 p-3 shadow-elevation-1 hover:shadow-elevation-2 transition-all hover:-translate-y-0.5 cursor-default">
+                            <div class="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 text-xs font-bold">3</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-sm font-semibold">Conversion optimization</div>
+                                <div class="text-xs text-muted">Homepage audit and next actions</div>
+                            </div>
+                            <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-600">Audit</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
         </div>
-
-        <aside class="rounded-xl border border-line bg-white shadow-xl overflow-hidden">
-            <div class="flex items-center justify-between px-5 py-4 border-b border-line">
-                <div class="font-bold">This week</div>
-                <div class="text-xs font-bold text-green">AI plan ready</div>
-            </div>
-            <div class="p-5 space-y-3">
-                <div class="flex items-center gap-3 rounded-lg border border-line p-3">
-                    <div class="h-2.5 w-2.5 rounded-full bg-green"></div>
-                    <div class="flex-1 min-w-0">
-                        <div class="text-sm font-semibold">Launch spring offer</div>
-                        <div class="text-xs text-muted">Email, social post, landing copy</div>
-                    </div>
-                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">3 assets</span>
-                </div>
-                <div class="flex items-center gap-3 rounded-lg border border-line p-3">
-                    <div class="h-2.5 w-2.5 rounded-full bg-blue"></div>
-                    <div class="flex-1 min-w-0">
-                        <div class="text-sm font-semibold">Find local prospects</div>
-                        <div class="text-xs text-muted">Audience angle and outreach prompts</div>
-                    </div>
-                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">Ready</span>
-                </div>
-                <div class="flex items-center gap-3 rounded-lg border border-line p-3">
-                    <div class="h-2.5 w-2.5 rounded-full bg-amber"></div>
-                    <div class="flex-1 min-w-0">
-                        <div class="text-sm font-semibold">Improve conversion</div>
-                        <div class="text-xs text-muted">Homepage audit and next best actions</div>
-                    </div>
-                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">Audit</span>
-                </div>
-            </div>
-        </aside>
     </div>
+</section>
 
-    <div class="mt-20 grid gap-6 md:grid-cols-3">
-        <article class="rounded-xl border border-line bg-white p-6">
-            <h2 class="text-lg font-bold">Campaign Builder</h2>
+<section class="mx-auto max-w-6xl px-6 py-16">
+    <div class="text-center mb-12">
+        <h2 class="text-2xl font-bold md:text-3xl">Everything you need to market smarter</h2>
+        <p class="mt-3 text-muted max-w-2xl mx-auto">LaunchPilot combines AI-powered content generation with campaign management in one simple platform.</p>
+    </div>
+    <div class="grid gap-6 md:grid-cols-3">
+        <article class="rounded-card bg-surface p-6 border border-line/60 shadow-elevation-1 hover:shadow-elevation-2 transition-all hover:-translate-y-1">
+            <div class="h-10 w-10 rounded-button bg-blue-50 flex items-center justify-center text-blue-600 text-lg mb-4">🎯</div>
+            <h3 class="text-lg font-bold">Campaign Builder</h3>
             <p class="mt-2 text-sm text-muted leading-relaxed">Generate campaign calendars, offers, ad angles, and launch checklists from a short business brief.</p>
         </article>
-        <article class="rounded-xl border border-line bg-white p-6">
-            <h2 class="text-lg font-bold">Content Studio</h2>
-            <p class="mt-2 text-sm text-muted leading-relaxed">Create practical email, social, and landing-page drafts that match the business, audience, and channel.</p>
+        <article class="rounded-card bg-surface p-6 border border-line/60 shadow-elevation-1 hover:shadow-elevation-2 transition-all hover:-translate-y-1">
+            <div class="h-10 w-10 rounded-button bg-green-50 flex items-center justify-center text-green-600 text-lg mb-4">✍️</div>
+            <h3 class="text-lg font-bold">Content Studio</h3>
+            <p class="mt-2 text-sm text-muted leading-relaxed">Create email, social, and landing-page drafts that match your business, audience, and channel.</p>
         </article>
-        <article class="rounded-xl border border-line bg-white p-6">
-            <h2 class="text-lg font-bold">Growth Coach</h2>
-            <p class="mt-2 text-sm text-muted leading-relaxed">Turn sales goals and performance notes into clear weekly actions an owner can actually complete.</p>
+        <article class="rounded-card bg-surface p-6 border border-line/60 shadow-elevation-1 hover:shadow-elevation-2 transition-all hover:-translate-y-1">
+            <div class="h-10 w-10 rounded-button bg-purple-50 flex items-center justify-center text-purple-600 text-lg mb-4">🧠</div>
+            <h3 class="text-lg font-bold">Knowledge Base</h3>
+            <p class="mt-2 text-sm text-muted leading-relaxed">Upload documents and scrape your website so AI agents always work with your real business context.</p>
         </article>
+    </div>
+</section>
+
+<section class="mx-auto max-w-6xl px-6 py-16">
+    <div class="text-center mb-12">
+        <h2 class="text-2xl font-bold md:text-3xl">Simple, transparent pricing</h2>
+        <p class="mt-3 text-muted">Start free, upgrade when you need more power.</p>
+    </div>
+    <div class="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
+        <div class="rounded-card bg-surface p-8 border border-line/60 shadow-elevation-1">
+            <div class="text-sm font-semibold text-muted mb-2">Free</div>
+            <div class="text-4xl font-extrabold">$0<span class="text-lg font-medium text-muted">/mo</span></div>
+            <p class="mt-2 text-sm text-muted">Perfect for getting started.</p>
+            <ul class="mt-6 space-y-3 text-sm">
+                <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 1 workspace</li>
+                <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 4 pre-built AI agents</li>
+                <li class="flex items-center gap-2"><span class="text-green-500">✓</span> 10 agent runs/day</li>
+                <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Knowledge base upload</li>
+                <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Copy-paste publishing</li>
+            </ul>
+            <a href="/register" class="mt-8 block w-full rounded-button border border-line bg-white px-4 py-2.5 text-sm font-bold text-ink text-center hover:bg-paper shadow-elevation-1 hover:shadow-elevation-2 transition-all">Get started</a>
+        </div>
+        <div class="rounded-card bg-surface p-8 border-2 border-accent shadow-elevation-2 relative">
+            <div class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-accent px-4 py-1 text-xs font-bold text-white">Most Popular</div>
+            <div class="text-sm font-semibold text-accent mb-2">Pro</div>
+            <div class="text-4xl font-extrabold">$19<span class="text-lg font-medium text-muted">/mo</span></div>
+            <p class="mt-2 text-sm text-muted">For serious marketers.</p>
+            <ul class="mt-6 space-y-3 text-sm">
+                <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Unlimited workspaces</li>
+                <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Custom AI agents</li>
+                <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Unlimited agent runs</li>
+                <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Bring your own API key</li>
+                <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Knowledge base export</li>
+            </ul>
+            <a href="/register" class="mt-8 block w-full rounded-button bg-accent px-4 py-2.5 text-sm font-bold text-white text-center hover:bg-accent/90 shadow-elevation-1 hover:shadow-elevation-2 transition-all hover:-translate-y-0.5">Start free trial</a>
+        </div>
     </div>
 </section>
 {/block}

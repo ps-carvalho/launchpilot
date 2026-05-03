@@ -3,3 +3,9 @@ vendor
 storage.env
 storage/
 .env
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/

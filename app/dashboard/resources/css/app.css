@@ -1,17 +1,85 @@
 @import "tailwindcss";
 
 @theme {
-    --color-ink: #172026;
-    --color-muted: #64717d;
-    --color-line: #d9e1e8;
-    --color-paper: #fbfcfd;
-    --color-surface: #ffffff;
-    --color-green: #1f8a70;
-    --color-blue: #2563eb;
-    --color-amber: #b86f08;
+  /* ── Semantic Colors ── */
+  --color-ink: #0f172a;
+  --color-paper: #f8fafc;
+  --color-surface: #ffffff;
+  --color-muted: #64748b;
+  --color-line: #e2e8f0;
+  --color-accent: #3b82f6;
+  --color-green: #10b981;
+  --color-blue: #3b82f6;
+  --color-amber: #f59e0b;
+  --color-red: #ef4444;
+  --color-purple: #8b5cf6;
+
+  /* ── Shadow Depth Elevation System ── */
+  --shadow-elevation-0: 0 0 0 rgba(0,0,0,0);
+  --shadow-elevation-1: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-elevation-2: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-elevation-3: 0 8px 24px rgba(0,0,0,0.10);
+  --shadow-elevation-4: 0 12px 32px rgba(0,0,0,0.12);
+  --shadow-elevation-hover: 0 6px 16px rgba(0,0,0,0.09);
+
+  /* ── Standard Tailwind Shadows (layered) ── */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --shadow-3xl: 0 32px 64px -12px rgb(0 0 0 / 0.30);
+
+  /* ── Border Radius ── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* ── Font ── */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 body {
-    background-color: var(--color-paper);
-    color: var(--color-ink);
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+}
+
+/* Selection */
+::selection {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 200ms ease-out;
+}
+.animate-slide-up {
+  animation: slideUp 200ms ease-out;
 }

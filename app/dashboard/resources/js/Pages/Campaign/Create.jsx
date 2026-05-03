@@ -1,38 +1,40 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { useState } from 'react';
+import AppShell from '../../Components/AppShell';
 
 const TYPES = [
-    { value: 'one_off', label: 'One-off Launch', description: 'A single marketing push for a product launch, event, or announcement.' },
-    { value: 'recurring', label: 'Recurring Content Stream', description: 'Regular content like weekly blog posts or monthly newsletters.' },
-    { value: 'ongoing', label: 'Ongoing Presence', description: 'Continuous social media presence and brand awareness.' },
+    { value: 'one_off', label: 'One-off Launch', icon: '🚀', desc: 'A focused, time-bound launch.' },
+    { value: 'recurring', label: 'Recurring Stream', icon: '🔄', desc: 'Repeats on a schedule.' },
+    { value: 'ongoing', label: 'Ongoing Presence', icon: '📡', desc: 'Continuous brand visibility.' },
 ];
 
-const CHANNELS = ['LinkedIn', 'Facebook', 'Instagram', 'Twitter/X', 'Blog', 'Email', 'Website'];
+const CHANNELS = ['LinkedIn', 'Twitter', 'Facebook', 'Instagram', 'Blog', 'Email'];
 
 export default function CampaignCreate({ workspaces }) {
-    const [workspaceId, setWorkspaceId] = useState(workspaces[0]?.id ?? '');
-    const [title, setTitle] = useState('');
-    const [description, setDescription] = useState('');
-    const [type, setType] = useState('one_off');
-    const [goal, setGoal] = useState('');
-    const [selectedChannels, setSelectedChannels] = useState([]);
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
-    const [submitting, setSubmitting] = useState(false);
-    const [error, setError] = useState('');
+    const [form, setForm] = useState({
+        workspace_id: workspaces?.[0]?.id ?? '',
+        title: '',
+        description: '',
+        goal: '',
+        type: 'one_off',
+        channels: [],
+    });
+    const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState({});
 
-    const toggleChannel = (channel) => {
-        setSelectedChannels((prev) =>
-            prev.includes(channel)
-                ? prev.filter((c) => c !== channel)
-                : [...prev, channel]
-        );
+    const toggleChannel = (ch) => {
+        setForm((prev) => ({
+            ...prev,
+            channels: prev.channels.includes(ch)
+                ? prev.channels.filter((c) => c !== ch)
+                : [...prev.channels, ch],
+        }));
     };
 
-    const handleSubmit = async (e) => {
+    const submit = async (e) => {
         e.preventDefault();
-        setError('');
-        setSubmitting(true);
+        setLoading(true);
+        setErrors({});
 
         try {
             const res = await fetch('/campaigns', {
@@ -40,192 +42,165 @@ export default function CampaignCreate({ workspaces }) {
                 credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    workspace_id: parseInt(workspaceId, 10),
-                    title,
-                    description,
-                    type,
-                    goal,
-                    channels: selectedChannels,
-                    start_date: startDate,
-                    end_date: endDate,
+                    ...form,
+                    channels: form.channels,
                 }),
             });
+
             const data = await res.json();
+
             if (data.success) {
-                window.location.href = `/campaigns/${data.campaign_id}`;
+                window.location.href = `/campaigns/${data.campaign.id}`;
+                return;
+            }
+
+            if (data.errors) {
+                setErrors(data.errors);
             } else {
-                setError(data.error || 'Failed to create campaign.');
+                setErrors({ general: data.message || 'Failed to create campaign.' });
             }
         } catch (e) {
-            setError('Something went wrong. Please try again.');
+            setErrors({ general: 'Network error.' });
         } finally {
-            setSubmitting(false);
+            setLoading(false);
         }
     };
 
     return (
         <>
             <Head title="New Campaign — LaunchPilot" />
-            <div className="min-h-screen bg-slate-50">
-                <header className="border-b border-line bg-white">
-                    <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-                        <Link href="/dashboard" className="text-lg font-bold tracking-tight">LaunchPilot AI</Link>
-                        <div className="flex items-center gap-4">
-                            <Link href="/campaigns" className="text-sm text-muted hover:text-ink">Campaigns</Link>
-                            <Link href="/dashboard" className="text-sm text-muted hover:text-ink">Dashboard</Link>
-                        </div>
-                    </div>
-                </header>
+            <AppShell>
+                <a href="/campaigns" className="text-sm text-muted hover:text-ink transition-colors inline-flex items-center gap-1 mb-4">
+                    ← Back to Campaigns
+                </a>
 
-                <main className="mx-auto max-w-3xl px-6 py-10">
-                    <Link href="/campaigns" className="text-sm text-muted hover:text-ink mb-4 inline-block">
-                        ← Back to campaigns
-                    </Link>
+                <div className="mx-auto max-w-2xl">
+                    <h1 className="text-2xl font-bold mb-1">New Campaign</h1>
+                    <p className="text-sm text-muted mb-6">Plan your next marketing initiative</p>
 
-                    <h1 className="text-2xl font-bold mb-1">Create a new campaign</h1>
-                    <p className="text-sm text-muted mb-8">Set up a container for your marketing initiative.</p>
-
-                    {error && (
-                        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                            {error}
-                        </div>
-                    )}
-
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={submit} className="space-y-6">
                         {/* Workspace */}
-                        {workspaces.length > 1 && (
-                            <div>
-                                <label className="block text-sm font-medium mb-1.5">Workspace</label>
-                                <select
-                                    value={workspaceId}
-                                    onChange={(e) => setWorkspaceId(e.target.value)}
-                                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink"
-                                >
-                                    {workspaces.map((ws) => (
-                                        <option key={ws.id} value={ws.id}>{ws.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
+                        <div>
+                            <label className="block text-sm font-bold mb-1.5">Workspace</label>
+                            <select
+                                value={form.workspace_id}
+                                onChange={(e) => setForm((prev) => ({ ...prev, workspace_id: e.target.value }))}
+                                className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+                            >
+                                {workspaces.map((w) => (
+                                    <option key={w.id} value={w.id}>
+                                        {w.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
                         {/* Title */}
                         <div>
-                            <label className="block text-sm font-medium mb-1.5">Campaign title <span className="text-red-500">*</span></label>
+                            <label className="block text-sm font-bold mb-1.5">Title</label>
                             <input
                                 type="text"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                placeholder="e.g. Summer Product Launch"
-                                required
-                                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink"
+                                value={form.title}
+                                onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                                className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+                                placeholder="e.g. Q1 Product Launch"
                             />
+                            {errors.title && <p className="mt-1 text-xs text-red-500">{errors.title}</p>}
                         </div>
 
                         {/* Description */}
                         <div>
-                            <label className="block text-sm font-medium mb-1.5">Description</label>
+                            <label className="block text-sm font-bold mb-1.5">Description</label>
                             <textarea
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder="What is this campaign about?"
+                                value={form.description}
+                                onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
                                 rows={3}
-                                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink"
+                                className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+                                placeholder="What is this campaign about?"
+                            />
+                        </div>
+
+                        {/* Goal */}
+                        <div>
+                            <label className="block text-sm font-bold mb-1.5">Goal</label>
+                            <textarea
+                                value={form.goal}
+                                onChange={(e) => setForm((prev) => ({ ...prev, goal: e.target.value }))}
+                                rows={2}
+                                className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+                                placeholder="e.g. Generate 100 signups"
                             />
                         </div>
 
                         {/* Type */}
                         <div>
-                            <label className="block text-sm font-medium mb-2">Campaign type</label>
-                            <div className="grid gap-3 md:grid-cols-3">
+                            <label className="block text-sm font-bold mb-2">Campaign Type</label>
+                            <div className="grid gap-3 sm:grid-cols-3">
                                 {TYPES.map((t) => (
                                     <button
                                         key={t.value}
                                         type="button"
-                                        onClick={() => setType(t.value)}
-                                        className={`rounded-xl border p-4 text-left transition-colors ${
-                                            type === t.value
-                                                ? 'border-ink bg-ink/5'
-                                                : 'border-line bg-white hover:border-ink/30'
+                                        onClick={() => setForm((prev) => ({ ...prev, type: t.value }))}
+                                        className={`rounded-xl border p-4 text-left transition-all shadow-elevation-1 hover:shadow-elevation-2 hover:-translate-y-0.5 ${
+                                            form.type === t.value
+                                                ? 'border-accent bg-accent/5 shadow-elevation-2'
+                                                : 'border-line/60 bg-white hover:border-accent/30'
                                         }`}
                                     >
+                                        <div className="text-2xl mb-2">{t.icon}</div>
                                         <div className="text-sm font-bold">{t.label}</div>
-                                        <div className="mt-1 text-xs text-muted">{t.description}</div>
+                                        <div className="mt-1 text-xs text-muted">{t.desc}</div>
                                     </button>
                                 ))}
                             </div>
-                        </div>
-
-                        {/* Goal */}
-                        <div>
-                            <label className="block text-sm font-medium mb-1.5">Goal</label>
-                            <input
-                                type="text"
-                                value={goal}
-                                onChange={(e) => setGoal(e.target.value)}
-                                placeholder="e.g. Drive 500 signups"
-                                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink"
-                            />
+                            {errors.type && <p className="mt-1 text-xs text-red-500">{errors.type}</p>}
                         </div>
 
                         {/* Channels */}
                         <div>
-                            <label className="block text-sm font-medium mb-2">Channels</label>
+                            <label className="block text-sm font-bold mb-2">Channels</label>
                             <div className="flex flex-wrap gap-2">
-                                {CHANNELS.map((channel) => (
+                                {CHANNELS.map((ch) => (
                                     <button
-                                        key={channel}
+                                        key={ch}
                                         type="button"
-                                        onClick={() => toggleChannel(channel)}
-                                        className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                                            selectedChannels.includes(channel)
-                                                ? 'bg-ink text-white'
-                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                        onClick={() => toggleChannel(ch)}
+                                        className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all shadow-sm hover:shadow-md ${
+                                            form.channels.includes(ch)
+                                                ? 'bg-accent text-white shadow-elevation-1'
+                                                : 'bg-white text-slate-700 border border-line/60 hover:border-accent/30'
                                         }`}
                                     >
-                                        {channel}
+                                        {ch}
                                     </button>
                                 ))}
                             </div>
-                        </div>
-
-                        {/* Dates */}
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <div>
-                                <label className="block text-sm font-medium mb-1.5">Start date</label>
-                                <input
-                                    type="date"
-                                    value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
-                                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1.5">End date</label>
-                                <input
-                                    type="date"
-                                    value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
-                                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink"
-                                />
-                            </div>
+                            {errors.channels && <p className="mt-1 text-xs text-red-500">{errors.channels}</p>}
                         </div>
 
                         {/* Submit */}
-                        <div className="flex items-center gap-3 pt-4">
+                        <div className="flex items-center gap-3 pt-2">
                             <button
                                 type="submit"
-                                disabled={submitting || !title.trim()}
-                                className="rounded-lg bg-ink px-6 py-2.5 text-sm font-bold text-white hover:bg-ink/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={loading}
+                                className="rounded-lg bg-ink px-6 py-2.5 text-sm font-bold text-white hover:bg-ink/90 shadow-elevation-1 hover:shadow-elevation-2 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
                             >
-                                {submitting ? 'Creating...' : 'Create campaign'}
+                                {loading ? 'Creating...' : 'Create Campaign'}
                             </button>
-                            <Link href="/campaigns" className="text-sm text-muted hover:text-ink">
+                            <a
+                                href="/campaigns"
+                                className="text-sm text-muted hover:text-ink transition-colors"
+                            >
                                 Cancel
-                            </Link>
+                            </a>
                         </div>
+
+                        {errors.general && (
+                            <p className="text-sm text-red-500">{errors.general}</p>
+                        )}
                     </form>
-                </main>
-            </div>
+                </div>
+            </AppShell>
         </>
     );
 }

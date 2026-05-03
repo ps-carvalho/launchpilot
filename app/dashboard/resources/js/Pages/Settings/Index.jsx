@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
+import AppShell from '../../Components/AppShell';
 
 export default function SettingsIndex({ settings, gsc_configured }) {
     const [apiKey, setApiKey] = useState('');
@@ -41,28 +42,19 @@ export default function SettingsIndex({ settings, gsc_configured }) {
     return (
         <>
             <Head title="Settings — LaunchPilot" />
-            <div className="min-h-screen">
-                <header className="border-b border-line bg-white">
-                    <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
-                        <div className="flex items-center gap-4">
-                            <Link href="/dashboard" className="text-lg font-bold tracking-tight">LaunchPilot AI</Link>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <Link href="/dashboard" className="text-sm text-muted hover:text-ink">Dashboard</Link>
-                            <Link href="/knowledge-base" className="text-sm text-muted hover:text-ink">Knowledge Base</Link>
-                        </div>
-                    </div>
-                </header>
+            <AppShell>
+                <Link href="/dashboard" className="text-sm text-muted hover:text-ink transition-colors inline-flex items-center gap-1 mb-4">
+                    ← Back to Dashboard
+                </Link>
 
-                <main className="mx-auto max-w-4xl px-6 py-10">
-                    <Link href="/dashboard" className="text-sm text-muted hover:text-ink mb-4 inline-block">← Back to Dashboard</Link>
-                    <h1 className="text-2xl font-bold mb-8">Settings</h1>
+                <h1 className="text-2xl font-bold mb-6">Settings</h1>
 
+                <div className="max-w-2xl space-y-5">
                     {/* Tier */}
-                    <div className="rounded-xl border border-line bg-white p-6 mb-6">
-                        <h2 className="text-sm font-bold mb-2">Plan</h2>
+                    <div className="rounded-xl border border-line/60 bg-white p-6 shadow-elevation-1">
+                        <h2 className="text-sm font-bold mb-3">Plan</h2>
                         <div className="flex items-center gap-3">
-                            <span className={`text-sm font-semibold px-3 py-1 rounded-full ${settings.tier === 'pro' ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-700'}`}>
+                            <span className={`text-sm font-semibold px-3 py-1 rounded-full border ${settings.tier === 'pro' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-slate-100 text-slate-700 border-slate-200'}`}>
                                 {settings.tier === 'pro' ? 'Pro' : 'Free'}
                             </span>
                             {settings.tier === 'free' && (
@@ -77,25 +69,27 @@ export default function SettingsIndex({ settings, gsc_configured }) {
                     </div>
 
                     {/* Export */}
-                    <div className="rounded-xl border border-line bg-white p-6 mb-6">
+                    <div className="rounded-xl border border-line/60 bg-white p-6 shadow-elevation-1">
                         <h2 className="text-sm font-bold mb-2">Export Knowledge Base</h2>
                         <p className="text-sm text-muted mb-4">Download all your documents and generated content as a Markdown file.</p>
                         <a
                             href="/settings/export"
-                            className="inline-block rounded-lg bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink/90"
+                            className="inline-block rounded-lg bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink/90 shadow-elevation-1 hover:shadow-elevation-2 transition-all hover:-translate-y-0.5"
                         >
                             Export Markdown
                         </a>
                     </div>
 
                     {/* GSC */}
-                    <div className="rounded-xl border border-line bg-white p-6 mb-6">
-                        <h2 className="text-sm font-bold mb-2">Google Search Console</h2>
+                    <div className="rounded-xl border border-line/60 bg-white p-6 shadow-elevation-1">
+                        <h2 className="text-sm font-bold mb-3">Google Search Console</h2>
                         {settings.has_gsc ? (
                             <div>
-                                <p className="text-sm text-green-700 mb-3">✓ Connected since {new Date(settings.gsc_connected_at).toLocaleDateString()}</p>
+                                <p className="text-sm text-green-700 mb-3 flex items-center gap-1">
+                                    <span>✓</span> Connected since {new Date(settings.gsc_connected_at).toLocaleDateString()}
+                                </p>
                                 <form action="/settings/gsc/disconnect" method="POST">
-                                    <button type="submit" className="text-sm text-red-600 hover:text-red-800 underline">
+                                    <button type="submit" className="text-sm text-red-600 hover:text-red-800 underline transition-colors">
                                         Disconnect
                                     </button>
                                 </form>
@@ -104,7 +98,7 @@ export default function SettingsIndex({ settings, gsc_configured }) {
                             <div>
                                 <p className="text-sm text-muted mb-3">Connect your Google Search Console account for SEO insights.</p>
                                 {gsc_configured ? (
-                                    <a href="/settings/gsc/connect" className="inline-block rounded-lg bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink/90">
+                                    <a href="/settings/gsc/connect" className="inline-block rounded-lg bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink/90 shadow-elevation-1 hover:shadow-elevation-2 transition-all hover:-translate-y-0.5">
                                         Connect GSC
                                     </a>
                                 ) : (
@@ -115,7 +109,7 @@ export default function SettingsIndex({ settings, gsc_configured }) {
                     </div>
 
                     {/* BYOK */}
-                    <div className={`rounded-xl border border-line bg-white p-6 mb-6 ${settings.tier !== 'pro' ? 'opacity-50' : ''}`}>
+                    <div className={`rounded-xl border border-line/60 bg-white p-6 shadow-elevation-1 ${settings.tier !== 'pro' ? 'opacity-50' : ''}`}>
                         <h2 className="text-sm font-bold mb-2">OpenRouter API Key</h2>
                         <p className="text-sm text-muted mb-3">Bring your own key for unlimited agent runs.</p>
                         <div className="flex gap-2">
@@ -125,12 +119,12 @@ export default function SettingsIndex({ settings, gsc_configured }) {
                                 onChange={(e) => setApiKey(e.target.value)}
                                 placeholder={settings.has_custom_api_key ? '••••••••' : 'sk-or-v1-...'}
                                 disabled={settings.tier !== 'pro'}
-                                className="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink disabled:bg-slate-50"
+                                className="flex-1 rounded-lg border border-line bg-paper px-4 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all disabled:bg-paper/50"
                             />
                             <button
                                 onClick={handleSaveApiKey}
                                 disabled={settings.tier !== 'pro'}
-                                className="rounded-lg bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink/90 disabled:opacity-50"
+                                className="rounded-lg bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink/90 shadow-elevation-1 hover:shadow-elevation-2 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
                             >
                                 Save
                             </button>
@@ -138,7 +132,7 @@ export default function SettingsIndex({ settings, gsc_configured }) {
                     </div>
 
                     {/* Custom Prompts */}
-                    <div className={`rounded-xl border border-line bg-white p-6 ${settings.tier !== 'pro' ? 'opacity-50' : ''}`}>
+                    <div className={`rounded-xl border border-line/60 bg-white p-6 shadow-elevation-1 ${settings.tier !== 'pro' ? 'opacity-50' : ''}`}>
                         <h2 className="text-sm font-bold mb-2">Custom Agent Prompts</h2>
                         <p className="text-sm text-muted mb-4">Override the default system prompts for each agent.</p>
                         {['social', 'content', 'seo', 'brainstorm'].map((agent) => (
@@ -150,26 +144,26 @@ export default function SettingsIndex({ settings, gsc_configured }) {
                                     disabled={settings.tier !== 'pro'}
                                     placeholder="Custom system prompt..."
                                     rows={3}
-                                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink disabled:bg-slate-50"
+                                    className="w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all disabled:bg-paper/50"
                                 />
                             </div>
                         ))}
                         <button
                             onClick={handleSavePrompts}
                             disabled={settings.tier !== 'pro'}
-                            className="rounded-lg bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink/90 disabled:opacity-50"
+                            className="rounded-lg bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink/90 shadow-elevation-1 hover:shadow-elevation-2 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
                         >
                             Save Prompts
                         </button>
                     </div>
+                </div>
 
-                    {saved && (
-                        <div className="fixed bottom-6 right-6 rounded-lg bg-green-600 px-4 py-2 text-sm font-bold text-white shadow-lg">
-                            Saved!
-                        </div>
-                    )}
-                </main>
-            </div>
+                {saved && (
+                    <div className="fixed bottom-6 right-6 rounded-lg bg-green-600 px-4 py-2 text-sm font-bold text-white shadow-elevation-3 animate-in">
+                        Saved!
+                    </div>
+                )}
+            </AppShell>
         </>
     );
 }

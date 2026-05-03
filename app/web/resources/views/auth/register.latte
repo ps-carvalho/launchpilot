@@ -1,38 +1,41 @@
 {layout 'web::layouts/main'}
 
 {block content}
-<section class="mx-auto max-w-md px-6 py-16">
-    <div class="rounded-xl border border-line bg-white p-8 shadow-sm">
-        <h1 class="text-2xl font-bold">Create your account</h1>
-        <p class="mt-2 text-sm text-muted">Start planning your marketing campaigns today.</p>
+<section class="mx-auto max-w-md px-6 py-16 md:py-24">
+    <div class="rounded-card bg-surface p-8 border border-line/60 shadow-elevation-2 animate-slide-up">
+        <div class="text-center mb-6">
+            <div class="inline-flex h-10 w-10 items-center justify-center rounded-button bg-ink text-white text-sm font-bold mb-4">LP</div>
+            <h1 class="text-2xl font-bold">Create your account</h1>
+            <p class="mt-1 text-sm text-muted">Start planning your marketing campaigns today.</p>
+        </div>
 
         {if isset($flash) && count($flash) > 0}
             {foreach $flash as $message}
-                <div class="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                <div class="mb-4 rounded-button bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 border border-red-100">
                     {$message}
                 </div>
             {/foreach}
         {/if}
 
-        <form action="/register" method="post" class="mt-6 space-y-4">
+        <form action="/register" method="post" class="space-y-4">
             <input type="hidden" name="_token" value="{$csrf_token}">
             <div>
-                <label for="name" class="block text-sm font-semibold">Full name</label>
-                <input id="name" name="name" type="text" required class="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue">
+                <label for="name" class="block text-sm font-medium text-ink mb-1.5">Full name</label>
+                <input id="name" name="name" type="text" required placeholder="Jane Smith" class="w-full rounded-button border border-line bg-paper px-4 py-2.5 text-sm text-ink placeholder:text-muted/60 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all">
             </div>
             <div>
-                <label for="email" class="block text-sm font-semibold">Email</label>
-                <input id="email" name="email" type="email" required class="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue">
+                <label for="email" class="block text-sm font-medium text-ink mb-1.5">Email</label>
+                <input id="email" name="email" type="email" required placeholder="jane@company.com" class="w-full rounded-button border border-line bg-paper px-4 py-2.5 text-sm text-ink placeholder:text-muted/60 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all">
             </div>
             <div>
-                <label for="password" class="block text-sm font-semibold">Password</label>
-                <input id="password" name="password" type="password" required minlength="8" class="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue">
+                <label for="password" class="block text-sm font-medium text-ink mb-1.5">Password</label>
+                <input id="password" name="password" type="password" required minlength="8" placeholder="Minimum 8 characters" class="w-full rounded-button border border-line bg-paper px-4 py-2.5 text-sm text-ink placeholder:text-muted/60 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all">
             </div>
-            <button type="submit" class="w-full rounded-lg bg-ink px-4 py-2.5 text-sm font-bold text-white hover:bg-ink/90">Create account</button>
+            <button type="submit" class="w-full rounded-button bg-ink px-4 py-2.5 text-sm font-bold text-white hover:bg-ink/90 shadow-elevation-1 hover:shadow-elevation-2 transition-all hover:-translate-y-0.5">Create account</button>
         </form>
 
         <p class="mt-6 text-center text-sm text-muted">
-            Already have an account? <a href="/login" class="font-semibold text-ink hover:underline">Log in</a>
+            Already have an account? <a href="/login" class="font-semibold text-ink hover:text-accent transition-colors">Log in</a>
         </p>
     </div>
 </section>
