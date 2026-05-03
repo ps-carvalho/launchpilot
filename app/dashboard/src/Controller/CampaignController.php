@@ -6,6 +6,8 @@ namespace App\Dashboard\Controller;
 
 use App\Dashboard\Authorization\WorkspaceAuthorization;
 use App\Dashboard\Http\RequestBodyParser;
+use App\Dashboard\Service\ExportService;
+use App\Dashboard\Service\UserSettingsService;
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
@@ -30,6 +32,8 @@ class CampaignController
         private readonly QueryBuilderFactoryInterface $queryFactory,
         private readonly WorkspaceAuthorization $workspaceAuth,
         private readonly RequestBodyParser $bodyParser,
+        private readonly UserSettingsService $userSettings,
+        private readonly ExportService $exportService,
     ) {}
 
     #[Get('/campaigns')]
@@ -84,11 +88,37 @@ class CampaignController
             ->orderBy('updated_at', 'DESC')
             ->get();
 
+        $remainingRuns = $this->userSettings->getRemainingRuns($userId);
+
         return $this->inertia->render($request, 'Campaign/Show', [
             'campaign' => $campaign,
             'contentItems' => $contentItems,
             'sessions' => $sessions,
+            'remainingRuns' => $remainingRuns,
         ]);
+    }
+
+    #[Get('/campaigns/{id}/export')]
+    public function export(int $id): Response
+    {
+        $userId = $this->auth->id() ?? 0;
+
+        $campaign = $this->workspaceAuth->campaignFor($userId, $id);
+        if ($campaign === null) {
+            return Response::redirect('/campaigns');
+        }
+
+        $markdown = $this->exportService->exportCampaign($id);
+        $filename = preg_replace('/[^a-z0-9]+/', '-', strtolower($campaign['title'])) . '-export.md';
+
+        return new Response(
+            body: $markdown,
+            statusCode: 200,
+            headers: [
+                'Content-Type' => 'text/markdown; charset=utf-8',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ],
+        );
     }
 
     #[Get('/campaigns/create')]

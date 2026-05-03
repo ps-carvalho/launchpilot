@@ -21,9 +21,10 @@ const TYPE_ICONS = {
     ongoing: '📡',
 };
 
-export default function CampaignShow({ campaign: initialCampaign, contentItems: initialItems, sessions }) {
+export default function CampaignShow({ campaign: initialCampaign, contentItems: initialItems, sessions, remainingRuns: initialRemainingRuns }) {
     const [campaign, setCampaign] = useState(initialCampaign);
     const [contentItems, setContentItems] = useState(initialItems);
+    const [remainingRuns, setRemainingRuns] = useState(initialRemainingRuns);
     const [activeAgent, setActiveAgent] = useState('social');
     const [editingId, setEditingId] = useState(null);
     const [editText, setEditText] = useState('');
@@ -261,6 +262,12 @@ export default function CampaignShow({ campaign: initialCampaign, contentItems: 
 
                             {!isEditingCampaign && !isArchived && (
                                 <div className="flex items-center gap-2 shrink-0">
+                                    <a
+                                        href={`/campaigns/${campaign.id}/export`}
+                                        className="rounded-lg border border-line bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-ink/30"
+                                    >
+                                        Export
+                                    </a>
                                     <button
                                         onClick={() => setIsEditingCampaign(true)}
                                         className="rounded-lg border border-line bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-ink/30"
@@ -304,6 +311,8 @@ export default function CampaignShow({ campaign: initialCampaign, contentItems: 
                                 agentType={activeAgent}
                                 agentLabel={AGENTS.find(a => a.type === activeAgent)?.label}
                                 agentIcon={AGENTS.find(a => a.type === activeAgent)?.icon}
+                                remainingRuns={remainingRuns}
+                                onRemainingRunsChange={setRemainingRuns}
                             />
                         </div>
 
