@@ -17,10 +17,17 @@ class AgentChatService
     /**
      * @param array<int, array{role: string, content: string}> $history
      * @param array<int, array<string, mixed>> $kbContext
+     * @param array{model?: string, temperature?: float, max_tokens?: int} $modelConfig
      * @return array{role: string, content: string}|null
      */
-    public function chat(int $userId, string $agentType, string $userMessage, array $history, array $kbContext): ?array
-    {
+    public function chat(
+        int $userId,
+        string $agentType,
+        string $userMessage,
+        array $history,
+        array $kbContext,
+        array $modelConfig = [],
+    ): ?array {
         $apiKey = $this->apiKeyResolver->resolve($userId);
 
         if (empty($apiKey) || $apiKey === 'sk-or-v1-REPLACE_ME') {
@@ -42,13 +49,17 @@ class AgentChatService
 
         $messages[] = ['role' => 'user', 'content' => $userMessage];
 
+        $model = $modelConfig['model'] ?? 'openai/gpt-4o-mini';
+        $temperature = $modelConfig['temperature'] ?? 0.7;
+        $maxTokens = $modelConfig['max_tokens'] ?? 2000;
+
         $response = $this->http->post(
             'https://openrouter.ai/api/v1/chat/completions',
             json_encode([
-                'model' => 'openai/gpt-4o-mini',
+                'model' => $model,
                 'messages' => $messages,
-                'temperature' => 0.7,
-                'max_tokens' => 2000,
+                'temperature' => $temperature,
+                'max_tokens' => $maxTokens,
             ]),
             [
                 'Content-Type' => 'application/json',
@@ -95,11 +106,11 @@ class AgentChatService
         $prompts = [
             'social' => "You are a Social Media Marketing Agent for LaunchPilot. Your job is to write engaging, platform-appropriate social media posts based on the user's business context.\n\nBUSINESS CONTEXT:\n{$kbText}\n\nInstructions:\n- Write short, punchy, engaging posts\n- Match the tone to the platform (LinkedIn = professional, Facebook = friendly, general = adaptable)\n- Include relevant hashtags when appropriate\n- Always provide the post text ready to copy-paste\n- If the user asks for multiple posts, number them clearly",
 
-            'content' => "You are a Content Marketing Agent for LaunchPilot. Your job is to write long-form marketing content like blog posts, success stories, and product announcements based on the user's business context.\n\nBUSINESS CONTEXT:\n{$kbText}\n\nInstructions:\n- Write compelling, well-structured long-form content\n- Use headings, bullet points, and paragraphs for readability\n- Include a catchy title and conclusion\n- Optimize for SEO naturally (no keyword stuffing)\n- Match the tone to the audience described in the business context",
+            'content' => "You are a Content Strategist for LaunchPilot. You are an expert at both writing long-form content AND developing content strategy.\n\nBUSINESS CONTEXT:\n{$kbText}\n\nInstructions:\n- For writing tasks: produce compelling, well-structured content with headings, bullet points, and readability in mind\n- For strategy tasks: suggest content angles, calendars, themes, and audience targeting\n- Include catchy titles when appropriate\n- Optimize for SEO naturally (no keyword stuffing)\n- Match tone to the audience described in the business context\n- If asked for ideas/brainstorming: be creative, suggest features, customer profiles, positioning, and messaging angles",
 
             'seo' => "You are an SEO Agent for LaunchPilot. Your job is to analyze websites and provide actionable SEO recommendations.\n\nBUSINESS CONTEXT:\n{$kbText}\n\nInstructions:\n- Provide specific, actionable SEO advice\n- Suggest keywords to target based on the business context\n- Recommend content gaps to fill\n- Give concrete steps the user can take to improve their search rankings\n- Be specific, not generic",
 
-            'brainstorm' => "You are a Product Strategy Agent for LaunchPilot. Your job is to help founders brainstorm product features and identify their target customers.\n\nBUSINESS CONTEXT:\n{$kbText}\n\nInstructions:\n- Suggest potential features that would add value\n- Identify the ideal customer profile based on the context\n- Provide actionable advice on positioning and messaging\n- Be creative but grounded in the business context provided",
+            'media' => "You are a Media Strategist for LaunchPilot. Your job is to help users plan and conceptualize visual and audio content.\n\nBUSINESS CONTEXT:\n{$kbText}\n\nInstructions:\n- For images: describe concepts in detail, suggest composition, colors, mood, and provide ready-to-use prompts for image generation tools\n- For video: write scripts with shot lists, voiceover text, timing, and visual direction\n- For audio/podcasts: outline segments, suggest interview questions, and describe sound design\n- Be specific and actionable — the user should be able to hand your output to a designer or creator\n- If asked about tools: recommend appropriate tools (e.g., Midjourney, ElevenLabs, CapCut)",
         ];
 
         return $prompts[$agentType] ?? $prompts['social'];

@@ -14,7 +14,7 @@ class EmbeddingService
     public function __construct(
         private readonly HttpClientInterface $http,
     ) {
-        $this->apiKey = $_ENV['OPENROUTER_API_KEY'] ?? '';
+        $this->apiKey = getenv('OPENROUTER_API_KEY') ?: '';
         $this->model = $_ENV['OPENROUTER_EMBEDDING_MODEL'] ?? 'openai/text-embedding-3-small';
     }
 

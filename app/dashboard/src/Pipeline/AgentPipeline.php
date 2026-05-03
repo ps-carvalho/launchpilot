@@ -7,6 +7,7 @@ namespace App\Dashboard\Pipeline;
 use App\Dashboard\Context\Builder\ContextBuilderRegistry;
 use App\Dashboard\Gate\CampaignGate;
 use App\Dashboard\Service\AgentChatService;
+use App\Dashboard\Service\AgentModelResolver;
 use App\Dashboard\Service\UsageQuota;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 
@@ -18,12 +19,13 @@ class AgentPipeline
         private readonly ContextBuilderRegistry $contextRegistry,
         private readonly UsageQuota $usageQuota,
         private readonly CampaignGate $campaignGate,
+        private readonly AgentModelResolver $modelResolver,
     ) {}
 
     /**
      * Execute the full agent chat pipeline.
      *
-     * @return array{response: array{role: string, content: string}, session_id: int, remaining_runs: int}
+     * @return array{response: array{role: string, content: string}, session_id: int, remaining_runs: int, model: string}
      * @throws \RuntimeException When rate limited, campaign not found, or agent fails.
      */
     public function run(int $userId, int $campaignId, string $agentType, string $message): array
@@ -59,7 +61,16 @@ class AgentPipeline
             $userId,
         );
 
-        $response = $this->chatService->chat($userId, $agentType, $message, $history, $kbContext);
+        $modelConfig = $this->modelResolver->resolve($userId, $agentType);
+
+        $response = $this->chatService->chat(
+            $userId,
+            $agentType,
+            $message,
+            $history,
+            $kbContext,
+            $modelConfig,
+        );
 
         if ($response === null) {
             throw new \RuntimeException('Failed to get response from agent.');
@@ -75,6 +86,7 @@ class AgentPipeline
             'response' => $response,
             'session_id' => $sessionId,
             'remaining_runs' => $this->usageQuota->remaining($userId),
+            'model' => $modelConfig['model'],
         ];
     }
 

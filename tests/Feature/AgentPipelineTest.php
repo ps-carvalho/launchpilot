@@ -11,6 +11,7 @@ use App\Dashboard\Http\HttpClientInterface;
 use App\Dashboard\Pipeline\AgentPipeline;
 use App\Dashboard\Repository\KnowledgeBaseRepository;
 use App\Dashboard\Service\AgentChatService;
+use App\Dashboard\Service\AgentModelResolver;
 use App\Dashboard\Service\AgentPromptRegistry;
 use App\Dashboard\Service\ApiKeyResolver;
 use App\Dashboard\Service\EmbeddingService;
@@ -41,6 +42,7 @@ beforeEach(function () {
     $usageQuota = new UsageQuota($this->query());
     $workspaceAuth = new WorkspaceAuthorization($this->query());
     $campaignGate = new CampaignGate($this->query(), $workspaceAuth);
+    $modelResolver = new AgentModelResolver($this->query());
 
     $this->pipeline = new AgentPipeline(
         $this->query(),
@@ -48,6 +50,7 @@ beforeEach(function () {
         $registry,
         $usageQuota,
         $campaignGate,
+        $modelResolver,
     );
 
     // Set a valid API key so we don't hit the "not configured" path

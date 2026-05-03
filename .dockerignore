@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+.env.testing
+node_modules
+vendor
+.dockerignore
+docker-compose.yml
+compose.yaml
+e2e
+tests
+playwright.config.js
+.vite
+*.md
+docs

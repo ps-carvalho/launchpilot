@@ -1,24 +1,25 @@
 import { useState, useRef, useEffect } from 'react';
 
-export default function AgentChat({ campaignId, agentType, agentLabel, agentIcon, remainingRuns, onRemainingRunsChange }) {
+export default function AgentChat({ campaignId, agentType, agentLabel, agentIcon, remainingRuns, onRemainingRunsChange, isPro, agentModels }) {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [sessionLoaded, setSessionLoaded] = useState(false);
+    const [currentModel, setCurrentModel] = useState(null);
     const messagesEndRef = useRef(null);
 
     const agentColors = {
         social: 'bg-blue-50/80 border-blue-100',
         content: 'bg-green-50/80 border-green-100',
         seo: 'bg-purple-50/80 border-purple-100',
-        brainstorm: 'bg-amber-50/80 border-amber-100',
+        media: 'bg-rose-50/80 border-rose-100',
     };
 
     const agentAccentColors = {
         social: 'text-blue-700',
         content: 'text-green-700',
         seo: 'text-purple-700',
-        brainstorm: 'text-amber-700',
+        media: 'text-rose-700',
     };
 
     useEffect(() => {
@@ -67,6 +68,9 @@ export default function AgentChat({ campaignId, agentType, agentLabel, agentIcon
                 setMessages((prev) => [...prev, data.message]);
                 if (typeof data.remaining_runs === 'number' && onRemainingRunsChange) {
                     onRemainingRunsChange(data.remaining_runs);
+                }
+                if (data.model) {
+                    setCurrentModel(data.model);
                 }
             } else if (data.error) {
                 setMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${data.error}` }]);
@@ -121,6 +125,11 @@ export default function AgentChat({ campaignId, agentType, agentLabel, agentIcon
                     )}
                     {remainingRuns === -1 && (
                         <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">Unlimited</span>
+                    )}
+                    {currentModel && (
+                        <span className="text-xs font-medium text-slate-400 bg-white/60 px-2 py-0.5 rounded-full border border-line/30" title="AI model powering this agent">
+                            {currentModel.split('/').pop()}
+                        </span>
                     )}
                 </div>
             </div>

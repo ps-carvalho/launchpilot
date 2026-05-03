@@ -7,6 +7,7 @@ namespace App\Dashboard\Controller;
 use App\Dashboard\Context\UserContext;
 use App\Dashboard\Http\RequestBodyParser;
 use App\Dashboard\Pipeline\AgentPipeline;
+use App\Dashboard\Service\AgentModelResolver;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Inertia\Middleware\InertiaMiddleware;
@@ -25,6 +26,7 @@ class AgentController
         private readonly QueryBuilderFactoryInterface $queryFactory,
         private readonly AgentPipeline $agentPipeline,
         private readonly RequestBodyParser $bodyParser,
+        private readonly AgentModelResolver $modelResolver,
     ) {}
 
     #[Get('/api/campaigns/{campaignId}/agents/{agentType}/session')]
@@ -76,6 +78,7 @@ class AgentController
             'message' => $result['response'],
             'session_id' => $result['session_id'],
             'remaining_runs' => $result['remaining_runs'],
+            'model' => $result['model'],
         ]);
     }
 
@@ -101,6 +104,7 @@ class AgentController
             'social' => 'social_post',
             'content' => 'blog_post',
             'seo' => 'seo_report',
+            'media' => 'media_plan',
             'brainstorm' => 'brainstorm_note',
             default => 'social_post',
         };
@@ -121,6 +125,15 @@ class AgentController
         return Response::json([
             'item_id' => $itemId,
             'message' => 'Content saved to campaign.',
+        ]);
+    }
+
+    #[Get('/api/agents/models')]
+    public function agentModels(): Response
+    {
+        return Response::json([
+            'models' => $this->modelResolver->availableModels(),
+            'defaults' => $this->modelResolver->defaults(),
         ]);
     }
 }

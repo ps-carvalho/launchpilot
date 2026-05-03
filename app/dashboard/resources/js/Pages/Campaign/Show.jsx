@@ -5,9 +5,9 @@ import AppShell from '../../Components/AppShell';
 
 const AGENTS = [
     { type: 'social', label: 'Social Agent', icon: '💬', description: 'LinkedIn, Facebook, and promotional posts' },
-    { type: 'content', label: 'Content Agent', icon: '📝', description: 'Blog posts, success stories, announcements' },
+    { type: 'content', label: 'Content Strategist', icon: '📝', description: 'Blog posts, strategy, and brainstorming' },
     { type: 'seo', label: 'SEO Agent', icon: '🔍', description: 'SEO analysis and optimization suggestions' },
-    { type: 'brainstorm', label: 'Brainstorm Agent', icon: '💡', description: 'Feature ideas and targeting advice' },
+    { type: 'media', label: 'Media Agent', icon: '🎨', description: 'Images, video scripts, and audio plans' },
 ];
 
 const TYPE_LABELS = {
@@ -22,7 +22,7 @@ const TYPE_ICONS = {
     ongoing: '📡',
 };
 
-export default function CampaignShow({ campaign: initialCampaign, contentItems: initialItems, sessions, remainingRuns: initialRemainingRuns }) {
+export default function CampaignShow({ campaign: initialCampaign, contentItems: initialItems, sessions, remainingRuns: initialRemainingRuns, isPro, agentModels }) {
     const [campaign, setCampaign] = useState(initialCampaign);
     const [contentItems, setContentItems] = useState(initialItems);
     const [activeAgent, setActiveAgent] = useState('social');
@@ -60,6 +60,7 @@ export default function CampaignShow({ campaign: initialCampaign, contentItems: 
         social_post: 'Social Post',
         blog_post: 'Blog Post',
         seo_report: 'SEO Report',
+        media_plan: 'Media Plan',
         brainstorm_note: 'Brainstorm Note',
     };
 
@@ -134,6 +135,22 @@ export default function CampaignShow({ campaign: initialCampaign, contentItems: 
             alert('Failed to save campaign.');
         } finally {
             setSavingCampaign(false);
+        }
+    };
+
+    const handleDeleteItem = async (itemId) => {
+        if (!confirm('Delete this content item?')) return;
+        try {
+            const res = await fetch(`/api/content-items/${itemId}/delete`, {
+                method: 'POST',
+                credentials: 'same-origin',
+            });
+            const data = await res.json();
+            if (data.success) {
+                setContentItems((prev) => prev.filter((item) => item.id !== itemId));
+            }
+        } catch (e) {
+            alert('Failed to delete item.');
         }
     };
 
@@ -296,6 +313,8 @@ export default function CampaignShow({ campaign: initialCampaign, contentItems: 
                             agentIcon={AGENTS.find(a => a.type === activeAgent)?.icon}
                             remainingRuns={remainingRuns}
                             onRemainingRunsChange={setRemainingRuns}
+                            isPro={isPro}
+                            agentModels={agentModels}
                         />
                     </div>
 
@@ -373,6 +392,12 @@ export default function CampaignShow({ campaign: initialCampaign, contentItems: 
                                                                 {next}
                                                             </button>
                                                         ))}
+                                                        <button
+                                                            onClick={() => handleDeleteItem(item.id)}
+                                                            className="text-xs text-red-500 hover:text-red-700 underline transition-colors"
+                                                        >
+                                                            Delete
+                                                        </button>
                                                     </div>
                                                 </>
                                             )}
