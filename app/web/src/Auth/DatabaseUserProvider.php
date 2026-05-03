@@ -39,7 +39,7 @@ class DatabaseUserProvider implements UserProviderInterface
 
     public function validateCredentials(AuthenticatableInterface $user, array $credentials): bool
     {
-        return $this->hasher->check($credentials['password'] ?? '', $user->getAuthPassword());
+        return $this->hasher->verify($credentials['password'] ?? '', $user->getAuthPassword());
     }
 
     public function retrieveByRememberToken(int|string $identifier, string $token): ?AuthenticatableInterface
