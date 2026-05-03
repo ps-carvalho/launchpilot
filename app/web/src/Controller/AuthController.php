@@ -120,7 +120,10 @@ class AuthController
         $text = strtolower(trim($text));
         $text = preg_replace('/[^a-z0-9]+/', '-', $text);
         $text = trim($text, '-');
+        $base = $text ?: 'workspace';
 
-        return $text ?: 'workspace';
+        $suffix = substr(uniqid(), -6);
+
+        return $base . '-' . $suffix;
     }
 }

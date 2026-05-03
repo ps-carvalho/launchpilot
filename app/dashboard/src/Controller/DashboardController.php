@@ -39,13 +39,21 @@ class DashboardController
         $workspaceIds = array_column($workspaces, 'id');
 
         $campaigns = [];
+        $documents = [];
 
         if (!empty($workspaceIds)) {
             $campaigns = $this->queryFactory->create()->table('campaigns')
                 ->whereIn('workspace_id', $workspaceIds)
                 ->orderBy('created_at', 'DESC')
                 ->get();
+
+            $documents = $this->queryFactory->create()->table('knowledge_documents')
+                ->whereIn('workspace_id', $workspaceIds)
+                ->orderBy('created_at', 'DESC')
+                ->get();
         }
+
+        $hasCompletedOnboarding = !empty($documents);
 
         return $this->inertia->render($request, 'Dashboard/Index', [
             'user' => [
@@ -54,6 +62,8 @@ class DashboardController
             ],
             'workspaces' => $workspaces,
             'campaigns' => $campaigns,
+            'documents' => $documents,
+            'hasCompletedOnboarding' => $hasCompletedOnboarding,
         ]);
     }
 }
