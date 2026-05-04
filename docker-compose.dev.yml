@@ -1,14 +1,15 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # Development override for LaunchPilot
-# 
+#
 # Usage:
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 #
-# This override:
-#   - Mounts ./public so Vite dev server / host builds are immediately visible
-#   - Mounts app source code for live PHP changes without rebuild
-#   - Enables Vite dev server integration
-#   - Runs PHP dev server instead of FPM for simpler setup
+# This override mounts source code for live PHP changes without rebuild.
+# Frontend assets must be built on the host first:
+#   npm run build
+#
+# For Vite HMR (hot module replacement), run `npm run dev` on your host
+# and set VITE_USE_DEV_SERVER=true below.
 # ═══════════════════════════════════════════════════════════════════════════════
 
 services:
@@ -20,19 +21,21 @@ services:
       - ./modules:/var/www/modules
       - ./storage:/var/www/storage
     environment:
-      VITE_USE_DEV_SERVER: "true"
+      # Set to true if you are running `npm run dev` on your host for HMR
+      VITE_USE_DEV_SERVER: "false"
       VITE_DEV_SERVER_URL: "http://host.docker.internal:5173"
       CACHE_DRIVER: redis
       CACHE_REDIS_HOST: redis
       CACHE_REDIS_PORT: 6379
       CACHE_REDIS_DB: 0
       CACHE_REDIS_PREFIX: "launchpilot:cache:"
-    # Override FPM with PHP built-in server for simpler dev setup
-    command: ["php", "-S", "0.0.0.0:9000", "-t", "public", "public/index.php"]
-    ports:
-      - "8000:9000"
 
   worker:
+    volumes:
+      - ./app:/var/www/app
+      - ./config:/var/www/config
+      - ./modules:/var/www/modules
+      - ./storage:/var/www/storage
     environment:
       CACHE_DRIVER: redis
       CACHE_REDIS_HOST: redis
@@ -43,8 +46,3 @@ services:
   nginx:
     volumes:
       - ./public:/var/www/public
-    # In dev mode, nginx proxies to host Vite dev server for assets
-    # The app container returns HTML with Vite dev server URLs
-
-  # Optional: Vite dev server runs on host, not in Docker
-  # Run `npm run dev` on your host machine
