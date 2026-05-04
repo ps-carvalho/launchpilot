@@ -215,7 +215,7 @@ describe('store', function () {
         $data = json_decode($response->body(), true);
 
         expect($response->statusCode())->toBe(422)
-            ->and($data['error'])->toContain('Title');
+            ->and($data['errors']['title'])->toContain('The title field is required.');
     });
 
     it('rejects invalid workspace', function () {
@@ -235,7 +235,7 @@ describe('store', function () {
         expect($response->statusCode())->toBe(403);
     });
 
-    it('defaults invalid type to one_off', function () {
+    it('rejects invalid type', function () {
         $userId = $this->createUser();
         $this->loginAsUser($userId);
         $wsId = $this->createWorkspace($userId);
@@ -250,11 +250,8 @@ describe('store', function () {
         $response = $this->controller->store($request);
         $data = json_decode($response->body(), true);
 
-        $campaign = $this->query()->create()->table('campaigns')
-            ->where('id', '=', $data['campaign_id'])
-            ->first();
-
-        expect($campaign['type'])->toBe('one_off');
+        expect($response->statusCode())->toBe(422)
+            ->and($data['errors']['type'])->toContain("The type field must be one of: 'one_off', 'recurring', 'ongoing'.");
     });
 });
 

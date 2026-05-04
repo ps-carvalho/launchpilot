@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AgentChat from '../../Components/AgentChat';
 import AppShell from '../../Components/AppShell';
 
@@ -113,7 +113,50 @@ export default function CampaignShow({ campaign: initialCampaign, contentItems: 
         }
     };
 
+    // SSE for real-time video status updates
+    useEffect(() => {
+        const sources = new Map();
+
+        mediaAssets.forEach((asset) => {
+            if (asset.type !== 'video' || (asset.status !== 'pending' && asset.status !== 'processing')) {
+                return;
+            }
+
+            const es = new EventSource(`/api/media/${asset.id}/stream`);
+            sources.set(asset.id, es);
+
+            es.addEventListener('status', (e) => {
+                try {
+                    const data = JSON.parse(e.data);
+                    if (data.asset) {
+                        setMediaAssets((prev) =>
+                            prev.map((a) => (a.id === asset.id ? data.asset : a))
+                        );
+                        // Close connection if terminal state reached
+                        if (data.asset.status === 'ready' || data.asset.status === 'failed') {
+                            es.close();
+                            sources.delete(asset.id);
+                        }
+                    }
+                } catch (err) {
+                    console.error('SSE parse error', err);
+                }
+            });
+
+            es.addEventListener('error', (e) => {
+                console.error('SSE error for asset', asset.id, e);
+                es.close();
+                sources.delete(asset.id);
+            });
+        });
+
+        return () => {
+            sources.forEach((es) => es.close());
+        };
+    }, [mediaAssets.map((a) => `${a.id}:${a.status}`).join(',')]);
+
     const pollVideo = async (assetId) => {
+        // Fallback manual poll — SSE handles most updates automatically
         try {
             const res = await fetch(`/api/media/${assetId}/poll`, {
                 method: 'POST',

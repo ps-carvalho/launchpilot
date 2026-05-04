@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
-use App\Dashboard\Context\UserContext;
+use App\User\Context\UserContext;
 use App\Dashboard\Gate\CampaignGate;
 use App\Dashboard\Gate\ContentItemGate;
 use App\Dashboard\Http\RequestBodyParser;
@@ -21,6 +21,7 @@ use Marko\Routing\Attributes\Post;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Session\Middleware\SessionMiddleware;
+use Marko\Validation\Contracts\ValidatorInterface;
 
 #[Middleware([SessionMiddleware::class, AuthMiddleware::class, InertiaMiddleware::class])]
 class CampaignController
@@ -38,6 +39,7 @@ class CampaignController
         private readonly UsageQuota $usageQuota,
         private readonly ExportService $exportService,
         private readonly AgentModelResolver $agentModelResolver,
+        private readonly ValidatorInterface $validator,
     ) {}
 
     #[Get('/campaigns')]
@@ -138,24 +140,35 @@ class CampaignController
     public function store(Request $request): Response
     {
         $userId = $this->userContext->id();
-        $workspaceId = (int) $this->bodyParser->get($request, 'workspace_id');
+        $data = $this->bodyParser->all($request);
+        $errors = $this->validator->validate($data, [
+            'workspace_id' => 'required|integer',
+            'title' => 'required|string|min:1|max:255',
+            'description' => 'nullable|string|max:2000',
+            'type' => 'nullable|in:one_off,recurring,ongoing',
+            'goal' => 'nullable|string|max:1000',
+            'channels' => 'nullable|array',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+        ]);
 
+        if ($errors->isNotEmpty()) {
+            return Response::json(['errors' => $errors->all()], 422);
+        }
+
+        $workspaceId = (int) ($data['workspace_id'] ?? 0);
         $workspaceIds = $this->campaignGate->workspaceIdsForUser($userId);
         if (!in_array($workspaceId, $workspaceIds, true)) {
             return Response::json(['error' => 'Invalid workspace.'], 403);
         }
 
-        $title = trim((string) $this->bodyParser->get($request, 'title'));
-        $description = trim((string) $this->bodyParser->get($request, 'description', ''));
-        $type = (string) $this->bodyParser->get($request, 'type', 'one_off');
-        $goal = trim((string) $this->bodyParser->get($request, 'goal', ''));
-        $channels = $this->bodyParser->get($request, 'channels', []);
-        $startDate = (string) $this->bodyParser->get($request, 'start_date', '');
-        $endDate = (string) $this->bodyParser->get($request, 'end_date', '');
-
-        if (empty($title)) {
-            return Response::json(['error' => 'Title is required.'], 422);
-        }
+        $title = trim((string) $data['title']);
+        $description = trim((string) ($data['description'] ?? ''));
+        $type = (string) ($data['type'] ?? 'one_off');
+        $goal = trim((string) ($data['goal'] ?? ''));
+        $channels = $data['channels'] ?? [];
+        $startDate = (string) ($data['start_date'] ?? '');
+        $endDate = (string) ($data['end_date'] ?? '');
 
         if (!in_array($type, self::VALID_TYPES, true)) {
             $type = 'one_off';
@@ -193,14 +206,30 @@ class CampaignController
             return Response::json(['error' => 'Not found.'], 404);
         }
 
-        $title = $this->bodyParser->get($request, 'title');
-        $description = $this->bodyParser->get($request, 'description');
-        $type = $this->bodyParser->get($request, 'type');
-        $status = $this->bodyParser->get($request, 'status');
-        $goal = $this->bodyParser->get($request, 'goal');
-        $channels = $this->bodyParser->get($request, 'channels');
-        $startDate = $this->bodyParser->get($request, 'start_date');
-        $endDate = $this->bodyParser->get($request, 'end_date');
+        $data = $this->bodyParser->all($request);
+        $errors = $this->validator->validate($data, [
+            'title' => 'nullable|string|min:1|max:255',
+            'description' => 'nullable|string|max:2000',
+            'type' => 'nullable|in:one_off,recurring,ongoing',
+            'status' => 'nullable|in:draft,active,completed',
+            'goal' => 'nullable|string|max:1000',
+            'channels' => 'nullable|array',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+        ]);
+
+        if ($errors->isNotEmpty()) {
+            return Response::json(['errors' => $errors->all()], 422);
+        }
+
+        $title = $data['title'] ?? null;
+        $description = $data['description'] ?? null;
+        $type = $data['type'] ?? null;
+        $status = $data['status'] ?? null;
+        $goal = $data['goal'] ?? null;
+        $channels = $data['channels'] ?? null;
+        $startDate = $data['start_date'] ?? null;
+        $endDate = $data['end_date'] ?? null;
 
         $update = [];
 

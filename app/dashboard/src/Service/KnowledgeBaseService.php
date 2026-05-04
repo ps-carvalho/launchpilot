@@ -16,23 +16,24 @@ class KnowledgeBaseService
     ) {}
 
     /**
-     * Process an uploaded file: parse, chunk, embed, and store.
+     * Parse and create a document record without chunking/embedding.
+     * Use processDocumentEmbedding() or dispatch a queue job for the slow part.
      *
-     * @return array{id: int, chunks: int}|null
+     * @return int|null Document ID
      */
-    public function processUpload(
+    public function createDocument(
         string $filePath,
         string $originalName,
         string $mimeType,
         int $workspaceId,
-    ): ?array {
+    ): ?int {
         $rawText = $this->parser->parse($filePath, $mimeType);
 
         if ($rawText === null || trim($rawText) === '') {
             return null;
         }
 
-        $documentId = $this->queryFactory->create()->table('knowledge_documents')->insert([
+        return $this->queryFactory->create()->table('knowledge_documents')->insert([
             'workspace_id' => $workspaceId,
             'filename' => basename($filePath),
             'original_name' => $originalName,
@@ -43,14 +44,27 @@ class KnowledgeBaseService
                 'parsed_at' => date('c'),
             ]),
         ]);
+    }
 
-        $chunks = $this->chunker->chunk($rawText, 2000, 200);
-        $this->storeChunks($documentId, $chunks);
+    /**
+     * Process an uploaded file: parse, chunk, embed, and store.
+     * Synchronous — blocks the request thread. Prefer createDocument + queue job.
+     *
+     * @return array{id: int, chunks: int}|null
+     */
+    public function processUpload(
+        string $filePath,
+        string $originalName,
+        string $mimeType,
+        int $workspaceId,
+    ): ?array {
+        $documentId = $this->createDocument($filePath, $originalName, $mimeType, $workspaceId);
 
-        return [
-            'id' => $documentId,
-            'chunks' => count($chunks),
-        ];
+        if ($documentId === null) {
+            return null;
+        }
+
+        return $this->processDocumentEmbedding($documentId);
     }
 
     /**
@@ -59,6 +73,17 @@ class KnowledgeBaseService
      * @return array{id: int, chunks: int}|null
      */
     public function processScrapedDocument(int $documentId): ?array
+    {
+        return $this->processDocumentEmbedding($documentId);
+    }
+
+    /**
+     * Chunk and embed an existing document by ID.
+     * Used by queue workers for async processing.
+     *
+     * @return array{id: int, chunks: int}|null
+     */
+    public function processDocumentEmbedding(int $documentId): ?array
     {
         $doc = $this->queryFactory->create()->table('knowledge_documents')
             ->where('id', '=', $documentId)

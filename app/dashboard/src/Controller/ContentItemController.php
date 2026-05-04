@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
-use App\Dashboard\Context\UserContext;
+use App\User\Context\UserContext;
 use App\Dashboard\Gate\ContentItemGate;
 use App\Dashboard\Http\RequestBodyParser;
 use Marko\Authentication\Middleware\AuthMiddleware;
@@ -15,6 +15,7 @@ use Marko\Routing\Attributes\Post;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Session\Middleware\SessionMiddleware;
+use Marko\Validation\Contracts\ValidatorInterface;
 
 #[Middleware([SessionMiddleware::class, AuthMiddleware::class, InertiaMiddleware::class])]
 class ContentItemController
@@ -32,16 +33,22 @@ class ContentItemController
         private readonly QueryBuilderFactoryInterface $queryFactory,
         private readonly ContentItemGate $itemGate,
         private readonly RequestBodyParser $bodyParser,
+        private readonly ValidatorInterface $validator,
     ) {}
 
     #[Post('/api/content-items/{id}/status')]
     public function updateStatus(Request $request, int $id): Response
     {
-        $newStatus = $this->bodyParser->get($request, 'status');
+        $data = $this->bodyParser->all($request);
+        $errors = $this->validator->validate($data, [
+            'status' => 'required|in:draft,approved,scheduled,published',
+        ]);
 
-        if (!in_array($newStatus, self::VALID_STATUSES, true)) {
-            return Response::json(['error' => 'Invalid status.'], 422);
+        if ($errors->isNotEmpty()) {
+            return Response::json(['errors' => $errors->all()], 422);
         }
+
+        $newStatus = $data['status'];
 
         $item = $this->itemGate->itemForUser($this->userContext->id(), $id);
         if ($item === null) {
@@ -69,11 +76,16 @@ class ContentItemController
     #[Post('/api/content-items/{id}/edit')]
     public function edit(Request $request, int $id): Response
     {
-        $content = $this->bodyParser->get($request, 'content');
+        $data = $this->bodyParser->all($request);
+        $errors = $this->validator->validate($data, [
+            'content' => 'required|string|min:1',
+        ]);
 
-        if (empty($content)) {
-            return Response::json(['error' => 'Content is required.'], 422);
+        if ($errors->isNotEmpty()) {
+            return Response::json(['errors' => $errors->all()], 422);
         }
+
+        $content = $data['content'];
 
         $item = $this->itemGate->itemForUser($this->userContext->id(), $id);
         if ($item === null) {

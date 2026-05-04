@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Service;
 
+use Marko\Cache\Contracts\CacheInterface;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 
 /**
@@ -62,6 +63,7 @@ class AgentModelResolver
 
     public function __construct(
         private readonly QueryBuilderFactoryInterface $queryFactory,
+        private readonly CacheInterface $cache,
     ) {}
 
     /**
@@ -72,6 +74,13 @@ class AgentModelResolver
     public function resolve(int $userId, string $modality): array
     {
         $modality = $this->normalizeModality($modality);
+        $cacheKey = "agent_model.{$userId}.{$modality}";
+
+        $cached = $this->cache->get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
+
         $defaults = self::FREE_DEFAULTS[$modality] ?? self::FREE_DEFAULTS['text'];
 
         $settings = $this->queryFactory->create()->table('user_settings')
@@ -81,14 +90,17 @@ class AgentModelResolver
         if ($settings !== null && $settings['tier'] === 'pro' && !empty($settings['agent_models'])) {
             $overrides = json_decode($settings['agent_models'] ?? '{}', true) ?: [];
             if (!empty($overrides[$modality]['model'])) {
-                return [
+                $result = [
                     'model' => $overrides[$modality]['model'],
                     'temperature' => $overrides[$modality]['temperature'] ?? $defaults['temperature'],
                     'max_tokens' => $overrides[$modality]['max_tokens'] ?? $defaults['max_tokens'],
                 ];
+                $this->cache->set($cacheKey, $result, 3600);
+                return $result;
             }
         }
 
+        $this->cache->set($cacheKey, $defaults, 3600);
         return $defaults;
     }
 
@@ -129,15 +141,25 @@ class AgentModelResolver
      */
     public function getUserModels(int $userId): array
     {
+        $cacheKey = "user_models.{$userId}";
+
+        $cached = $this->cache->get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
+
         $settings = $this->queryFactory->create()->table('user_settings')
             ->where('user_id', '=', $userId)
             ->first();
 
         if ($settings === null || $settings['tier'] !== 'pro') {
+            $this->cache->set($cacheKey, [], 3600);
             return [];
         }
 
-        return json_decode($settings['agent_models'] ?? '{}', true) ?: [];
+        $result = json_decode($settings['agent_models'] ?? '{}', true) ?: [];
+        $this->cache->set($cacheKey, $result, 3600);
+        return $result;
     }
 
     private function normalizeModality(string $modality): string

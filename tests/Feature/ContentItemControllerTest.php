@@ -75,7 +75,7 @@ describe('updateStatus', function () {
         $data = json_decode($response->body(), true);
 
         expect($response->statusCode())->toBe(422)
-            ->and($data['error'])->toContain('Invalid status');
+            ->and($data['errors']['status'])->toContain("The status field must be one of: 'draft', 'approved', 'scheduled', 'published'.");
     });
 
     it('rejects unauthorized transitions', function () {
@@ -193,7 +193,7 @@ describe('edit', function () {
         $data = json_decode($response->body(), true);
 
         expect($response->statusCode())->toBe(422)
-            ->and($data['error'])->toContain('Content is required');
+            ->and($data['errors']['content'])->toContain('The content field is required.');
     });
 
     it('returns 404 for unauthorized item', function () {

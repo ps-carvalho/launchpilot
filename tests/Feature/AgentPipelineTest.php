@@ -26,10 +26,15 @@ beforeEach(function () {
     // Override HttpClientInterface in container
     $this->container()->instance(HttpClientInterface::class, $this->fakeHttp);
 
+    // Resolve framework-provided contracts from container
+    $logger = $this->container()->get(\Marko\Log\Contracts\LoggerInterface::class);
+    $cache = $this->container()->get(\Marko\Cache\Contracts\CacheInterface::class);
+    $filesystem = $this->container()->get(\Marko\Filesystem\Contracts\FilesystemInterface::class);
+
     // Re-instantiate services that depend on HttpClientInterface
-    $apiKeyResolver = new ApiKeyResolver($this->query());
+    $apiKeyResolver = new ApiKeyResolver($this->query(), $logger);
     $promptRegistry = new AgentPromptRegistry($this->query());
-    $chatService = new AgentChatService($apiKeyResolver, $promptRegistry, $this->fakeHttp);
+    $chatService = new AgentChatService($apiKeyResolver, $promptRegistry, $this->fakeHttp, $logger);
     $embedder = new EmbeddingService($this->fakeHttp);
     $kbRepo = new KnowledgeBaseRepository($this->query());
     $kbBuilder = new KnowledgeBaseContextBuilder($embedder, $kbRepo);
@@ -43,8 +48,8 @@ beforeEach(function () {
     $usageQuota = new UsageQuota($this->query());
     $workspaceAuth = new WorkspaceAuthorization($this->query());
     $campaignGate = new CampaignGate($this->query(), $workspaceAuth);
-    $modelResolver = new AgentModelResolver($this->query());
-    $videoService = new VideoGenerationService($apiKeyResolver, $this->fakeHttp, $this->query());
+    $modelResolver = new AgentModelResolver($this->query(), $cache);
+    $videoService = new VideoGenerationService($apiKeyResolver, $this->fakeHttp, $this->query(), $logger, $filesystem);
 
     $this->pipeline = new AgentPipeline(
         $this->query(),
@@ -54,6 +59,7 @@ beforeEach(function () {
         $usageQuota,
         $campaignGate,
         $modelResolver,
+        $logger,
     );
 
     // Set a valid API key so we don't hit the "not configured" path

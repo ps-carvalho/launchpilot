@@ -6,6 +6,8 @@ namespace App\Dashboard\Service;
 
 use App\Dashboard\Http\HttpClientInterface;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
+use Marko\Filesystem\Contracts\FilesystemInterface;
+use Marko\Log\Contracts\LoggerInterface;
 
 /**
  * Handles async video generation via OpenRouter's /api/v1/videos API.
@@ -17,6 +19,8 @@ class VideoGenerationService
         private readonly ApiKeyResolver $apiKeyResolver,
         private readonly HttpClientInterface $http,
         private readonly QueryBuilderFactoryInterface $queryFactory,
+        private readonly LoggerInterface $logger,
+        private readonly FilesystemInterface $filesystem,
     ) {}
 
     /**
@@ -35,10 +39,16 @@ class VideoGenerationService
         $apiKey = $this->apiKeyResolver->resolve($userId);
 
         if (empty($apiKey)) {
+            $this->logger->warning('Video generation API key not resolved', ['user_id' => $userId]);
             return null;
         }
 
         $model = $modelConfig['model'] ?? 'google/veo-3.1-lite';
+
+        $this->logger->info('Video generation submit', [
+            'user_id' => $userId,
+            'model' => $model,
+        ]);
 
         $body = [
             'model' => $model,
@@ -68,13 +78,24 @@ class VideoGenerationService
         );
 
         if ($response === null) {
+            $this->logger->error('Video generation submit failed', ['user_id' => $userId, 'model' => $model]);
             return null;
         }
 
         $decoded = json_decode($response['body'], true);
         if (!is_array($decoded) || empty($decoded['id'])) {
+            $this->logger->error('Video generation submit decode failed', [
+                'user_id' => $userId,
+                'body_preview' => substr($response['body'] ?? '', 0, 200),
+            ]);
             return null;
         }
+
+        $this->logger->info('Video generation submitted', [
+            'user_id' => $userId,
+            'job_id' => $decoded['id'],
+            'model' => $model,
+        ]);
 
         return [
             'job_id' => $decoded['id'],
@@ -93,8 +114,11 @@ class VideoGenerationService
         $apiKey = $this->apiKeyResolver->resolve($userId);
 
         if (empty($apiKey)) {
+            $this->logger->warning('Video poll API key not resolved', ['user_id' => $userId, 'job_id' => $jobId]);
             return null;
         }
+
+        $this->logger->debug('Video generation poll', ['user_id' => $userId, 'job_id' => $jobId]);
 
         $response = $this->http->get(
             'https://openrouter.ai/api/v1/videos/' . $jobId,
@@ -112,11 +136,18 @@ class VideoGenerationService
 
         $decoded = json_decode($response['body'], true);
         if (!is_array($decoded)) {
+            $this->logger->error('Video poll decode failed', [
+                'job_id' => $jobId,
+                'body_preview' => substr($response['body'] ?? '', 0, 200),
+            ]);
             return null;
         }
 
+        $status = $decoded['status'] ?? 'unknown';
+        $this->logger->debug('Video poll result', ['job_id' => $jobId, 'status' => $status]);
+
         return [
-            'status' => $decoded['status'] ?? 'unknown',
+            'status' => $status,
             'unsigned_urls' => $decoded['unsigned_urls'] ?? [],
         ];
     }
@@ -131,15 +162,12 @@ class VideoGenerationService
         $apiKey = $this->apiKeyResolver->resolve($userId);
 
         if (empty($apiKey)) {
+            $this->logger->warning('Video download API key not resolved', ['user_id' => $userId]);
             return null;
         }
 
-        $dir = '/var/www/storage/media/' . $campaignPath;
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
-        $localPath = $dir . '/' . $filename;
+        $relativePath = 'media/' . $campaignPath . '/' . $filename;
+        $localPath = '/var/www/storage/' . $relativePath;
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
@@ -155,10 +183,19 @@ class VideoGenerationService
         curl_close($ch);
 
         if ($data === false || $httpCode !== 200) {
+            $this->logger->error('Video download failed', [
+                'http_code' => $httpCode,
+                'url' => $url,
+            ]);
             return null;
         }
 
-        file_put_contents($localPath, $data);
+        $this->filesystem->write($relativePath, $data);
+
+        $this->logger->info('Video downloaded', [
+            'local_path' => $localPath,
+            'size_bytes' => strlen($data),
+        ]);
 
         return $localPath;
     }

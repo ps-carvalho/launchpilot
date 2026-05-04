@@ -125,7 +125,7 @@ describe('chat', function () {
         $data = json_decode($response->body(), true);
 
         expect($response->statusCode())->toBe(422)
-            ->and($data['error'])->toContain('Message is required');
+            ->and($data['errors']['message'])->toContain('The message field is required.');
     });
 
     it('returns 429 when rate limited', function () {

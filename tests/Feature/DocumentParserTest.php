@@ -42,6 +42,17 @@ describe('parse', function () {
         expect($result)->toBe('UTF-8 content here');
     });
 
+    it('parses markdown files', function () {
+        $parser = new DocumentParser();
+        $tmpFile = tempnam(sys_get_temp_dir(), 'md_');
+        $this->tempFiles[] = $tmpFile;
+        file_put_contents($tmpFile, "# Hello\n\nThis is **bold** and _italic_.");
+
+        $result = $parser->parse($tmpFile, 'text/markdown');
+
+        expect($result)->toBe("# Hello\n\nThis is **bold** and _italic_.");
+    });
+
     it('returns null for unsupported mime type', function () {
         $parser = new DocumentParser();
         $tmpFile = tempnam(sys_get_temp_dir(), 'bin_');

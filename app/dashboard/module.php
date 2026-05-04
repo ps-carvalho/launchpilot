@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Dashboard\AppLocator;
 use App\Dashboard\Context\Builder\ContextBuilderRegistry;
 use App\Dashboard\Context\Builder\GscContextBuilder;
 use App\Dashboard\Context\Builder\KnowledgeBaseContextBuilder;
@@ -20,4 +21,7 @@ return [
             return $registry;
         },
     ],
+    'boot' => function (ContainerInterface $container): void {
+        AppLocator::set($container);
+    },
 ];

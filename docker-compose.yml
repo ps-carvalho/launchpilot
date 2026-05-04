@@ -43,6 +43,53 @@ services:
       VITE_USE_DEV_SERVER: "false"
       INERTIA_SSR_ENABLED: "false"
       SESSION_DRIVER: file
+      LOG_DRIVER: file
+      LOG_PATH: storage/logs
+      LOG_LEVEL: info
+      LOG_CHANNEL: launchpilot
+      CACHE_DRIVER: file
+      CACHE_PATH: storage/cache
+      CACHE_TTL: 3600
+      QUEUE_DRIVER: database
+    volumes:
+      - app_storage:/var/www/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - launchpilot
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    container_name: launchpilot-worker
+    restart: unless-stopped
+    # Queue worker — processes background jobs
+    command: ["php", "vendor/bin/marko", "queue:work"]
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_KEY: base64:launchpilotappkey1234567890123456
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-$ZcKdbYlimX9aIQ5H7LkV1pxPmNbsuOVY9IPNuNQTVUI=}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_EMBEDDING_MODEL: ${OPENROUTER_EMBEDDING_MODEL:-openai/text-embedding-3-small}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: launchpilot
+      DB_USERNAME: launchpilot
+      DB_PASSWORD: launchpilot
+      SESSION_DRIVER: file
+      LOG_DRIVER: file
+      LOG_PATH: storage/logs
+      LOG_LEVEL: info
+      LOG_CHANNEL: launchpilot
+      CACHE_DRIVER: file
+      CACHE_PATH: storage/cache
+      CACHE_TTL: 3600
+      QUEUE_DRIVER: database
     volumes:
       - app_storage:/var/www/storage
     depends_on:

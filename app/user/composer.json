@@ -1,0 +1,14 @@
+{
+    "name": "app/user",
+    "description": "User authentication and account management for LaunchPilot AI.",
+    "autoload": {
+        "psr-4": {
+            "App\\User\\": "src/"
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}
