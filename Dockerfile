@@ -27,6 +27,7 @@ RUN composer install --optimize-autoloader --no-interaction --no-progress
 FROM alpine:3.21 AS app-base
 WORKDIR /var/www
 COPY --chown=1000:1000 . .
+RUN rm -rf public/build
 COPY --from=node-builder --chown=1000:1000 /app/public/build ./public/build
 COPY --from=composer-builder --chown=1000:1000 /app/vendor ./vendor
 

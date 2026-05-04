@@ -2,7 +2,12 @@
 
 declare(strict_types=1);
 
+use Marko\Queue\Worker;
+use Marko\Queue\WorkerInterface;
+
 return [
     'enabled' => true,
-    'bindings' => [],
+    'bindings' => [
+        WorkerInterface::class => Worker::class,
+    ],
 ];

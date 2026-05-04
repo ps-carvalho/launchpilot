@@ -15,6 +15,16 @@ class ProcessDocumentJob extends Job
         private readonly int $documentId,
     ) {}
 
+    public function serialize(): string
+    {
+        return base64_encode(parent::serialize());
+    }
+
+    public static function unserialize(string $data): static
+    {
+        return parent::unserialize(base64_decode($data));
+    }
+
     public function handle(): void
     {
         $logger = AppLocator::get(LoggerInterface::class);
