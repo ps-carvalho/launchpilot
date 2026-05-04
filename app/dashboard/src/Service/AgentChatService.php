@@ -208,6 +208,108 @@ class AgentChatService
     }
 
     /**
+     * Stream a text response token-by-token via OpenRouter SSE.
+     * Calls $onToken for each token chunk as it arrives from the API.
+     *
+     * @param array<int, array{role: string, content: string}> $history
+     * @param array<int, array<string, mixed>> $kbContext
+     * @param array{model?: string, temperature?: float, max_tokens?: int} $modelConfig
+     * @param callable(string): void $onToken
+     */
+    public function streamChat(
+        int $userId,
+        string $modality,
+        string $userMessage,
+        array $history,
+        array $kbContext,
+        callable $onToken,
+        array $modelConfig = [],
+    ): void {
+        $apiKey = $this->apiKeyResolver->resolve($userId);
+
+        if (empty($apiKey)) {
+            $onToken('⚠️ OpenRouter API key is not configured. Please add `OPENROUTER_API_KEY` to your environment to enable AI agents.');
+            return;
+        }
+
+        $this->logger->info('Agent chat stream request', [
+            'user_id' => $userId,
+            'modality' => $modality,
+            'model' => $modelConfig['model'] ?? 'default',
+        ]);
+
+        $systemPrompt = $this->buildSystemPrompt($userId, $modality, $kbContext);
+
+        $messages = [
+            ['role' => 'system', 'content' => $systemPrompt],
+        ];
+
+        foreach ($history as $msg) {
+            $messages[] = $msg;
+        }
+
+        $messages[] = ['role' => 'user', 'content' => $userMessage];
+
+        $model = $modelConfig['model'] ?? 'meta-llama/llama-3.3-70b-instruct';
+        $temperature = $modelConfig['temperature'] ?? 0.7;
+        $maxTokens = $modelConfig['max_tokens'] ?? 2000;
+
+        $body = json_encode([
+            'model' => $model,
+            'messages' => $messages,
+            'temperature' => $temperature,
+            'max_tokens' => $maxTokens,
+            'stream' => true,
+        ]);
+
+        $buffer = '';
+
+        $ch = curl_init('https://openrouter.ai/api/v1/chat/completions');
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $apiKey,
+            'HTTP-Referer: https://launchpilot.ai',
+            'X-Title: LaunchPilot',
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $data) use (&$buffer, $onToken): int {
+            $buffer .= $data;
+
+            while (($pos = strpos($buffer, "\n\n")) !== false) {
+                $event = substr($buffer, 0, $pos);
+                $buffer = substr($buffer, $pos + 2);
+
+                foreach (explode("\n", $event) as $line) {
+                    if (str_starts_with($line, 'data: ')) {
+                        $json = substr($line, 6);
+
+                        if ($json === '[DONE]') {
+                            break 2;
+                        }
+
+                        $decoded = json_decode($json, true);
+                        if (is_array($decoded)) {
+                            $content = $decoded['choices'][0]['delta']['content'] ?? '';
+                            if ($content !== '') {
+                                $onToken($content);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return strlen($data);
+        });
+
+        curl_exec($ch);
+        curl_close($ch);
+
+        $this->logger->info('Agent chat stream completed', ['user_id' => $userId]);
+    }
+
+    /**
      * @param array<int, array<string, mixed>> $kbContext
      */
     private function buildSystemPrompt(int $userId, string $modality, array $kbContext): string

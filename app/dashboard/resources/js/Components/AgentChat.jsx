@@ -94,6 +94,78 @@ export default function AgentChat({
             setMessages((prev) => [...prev, userMessageObj]);
         }
 
+        // Use SSE streaming for text mode
+        if (activeMode === 'text') {
+            try {
+                const es = new EventSource(`/api/campaigns/${campaignId}/agents/${activeMode}/stream?message=${encodeURIComponent(userMsg)}`);
+                let assistantContent = '';
+                let meta = {};
+
+                es.addEventListener('token', (e) => {
+                    try {
+                        const data = JSON.parse(e.data);
+                        assistantContent += data.token;
+                        setMessages((prev) => {
+                            const withoutPending = prev.filter((m) => m.role !== 'assistant' || m.streamed !== true);
+                            return [...withoutPending, {
+                                role: 'assistant',
+                                content: assistantContent,
+                                streamed: true,
+                                timestamp: new Date().toISOString(),
+                            }];
+                        });
+                    } catch (err) {
+                        console.error('Token parse error', err);
+                    }
+                });
+
+                es.addEventListener('done', (e) => {
+                    try {
+                        meta = JSON.parse(e.data);
+                        if (typeof meta.remaining_runs === 'number' && onRemainingRunsChange) {
+                            onRemainingRunsChange(meta.remaining_runs);
+                        }
+                        if (meta.model) {
+                            setCurrentModel(meta.model);
+                        }
+                    } catch (err) {
+                        // ignore
+                    }
+                    es.close();
+                    setLoading(false);
+                    // Replace streamed message with final
+                    setMessages((prev) => {
+                        const withoutPending = prev.filter((m) => m.role !== 'assistant' || m.streamed !== true);
+                        return [...withoutPending, {
+                            role: 'assistant',
+                            content: assistantContent,
+                            timestamp: new Date().toISOString(),
+                        }];
+                    });
+                });
+
+                es.addEventListener('error', (e) => {
+                    console.error('Stream error', e);
+                    es.close();
+                    setLoading(false);
+                    // Fallback: show error or try batch endpoint
+                    setMessages((prev) => {
+                        const withoutPending = prev.filter((m) => m.role !== 'assistant' || m.streamed !== true);
+                        if (assistantContent === '') {
+                            return [...withoutPending, { role: 'assistant', content: 'Error: Stream failed. Please try again.', timestamp: new Date().toISOString() }];
+                        }
+                        return [...withoutPending, { role: 'assistant', content: assistantContent, timestamp: new Date().toISOString() }];
+                    });
+                });
+            } catch (err) {
+                console.error('Stream setup failed', err);
+                setLoading(false);
+                setMessages((prev) => [...prev, { role: 'assistant', content: 'Error: Could not start stream.', timestamp: new Date().toISOString() }]);
+            }
+            return;
+        }
+
+        // Batch mode for image/video
         try {
             const res = await fetch(`/api/campaigns/${campaignId}/agents/${activeMode}/chat`, {
                 method: 'POST',
@@ -114,7 +186,6 @@ export default function AgentChat({
 
                 // Handle image generation results
                 if (activeMode === 'image' && data.message.images?.length > 0) {
-                    // Save images to media assets
                     for (const imgData of data.message.images) {
                         await saveImage(imgData, userMsg);
                     }
@@ -122,13 +193,7 @@ export default function AgentChat({
 
                 // Handle video job submission
                 if (activeMode === 'video' && data.message.asset_id) {
-                    // Trigger initial poll after a delay
                     setTimeout(() => onPollVideo(data.message.asset_id), 5000);
-                }
-
-                // Handle free-tier video script
-                if (activeMode === 'video' && data.message.upgrade_cta) {
-                    // Just show the text response; the CTA is in the message
                 }
             } else if (data.error) {
                 setMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${data.error}` }]);
