@@ -12,25 +12,30 @@ LaunchPilot is an AI-driven marketing campaign planner for small businesses and 
 
 | Marko Feature | How LaunchPilot Uses It |
 |---|---|
-| **Attribute Routing** | PHP 8 `#[Get('/campaigns')]` and `#[Post('/api/...')]` attributes across 8 controllers |
-| **DI Container** | Constructor auto-wiring for 25+ services; custom module bindings for context builder registry |
+| **Attribute Routing** | PHP 8 `#[Get('/campaigns')]` and `#[Post('/api/...')]` attributes across 10+ controllers |
+| **DI Container** | Constructor auto-wiring for 30+ services; custom module bindings for context builder registry |
 | **Middleware Pipeline** | Session → Auth → Inertia middleware chain on every dashboard route |
 | **Inertia.js Integration** | React 19 SPA with SSR support, Vite HMR, and shared data propagation |
-| **Module System** | Dashboard module (`app/dashboard`) + Web module (`app/web`) with independent bindings |
+| **Module System** | Three modules (`app/user`, `app/web`, `app/dashboard`) with independent bindings |
 | **PostgreSQL + pgvector** | Vector similarity search for RAG-powered AI agents |
+| **Queue System** | Database-backed queue with dedicated worker container for background jobs |
+| **Validation** | `marko/validation` integrated across all controllers with 422 error responses |
 
 ## Architecture Highlights
 
 ```
-app/dashboard/src/
-├── Context/          # Request-scoped value objects (UserContext)
-├── Controller/       # 8 HTTP controllers using attribute routing
-├── Gate/             # Resource authorization (CampaignGate, KnowledgeBaseGate, ContentItemGate)
-├── Pipeline/         # AgentPipeline with pluggable ContextBuilderRegistry
-├── Repository/       # KnowledgeBaseRepository — deep seam over pgvector
-├── Service/          # Split services: UsageQuota, ApiKeyResolver, AgentPromptRegistry
-├── Flow/             # OnboardingFlow — business rule orchestration
-└── Context/Builder/  # Pluggable agent context builders (KB, GSC)
+app/
+├── user/             # Authentication module — UserProvider, login/register/logout
+├── web/              # Web module — public pages, bindings (HTTP client, worker)
+└── dashboard/        # Dashboard module — core business logic
+    ├── Controller/       # 10+ HTTP controllers using attribute routing
+    ├── Gate/             # Resource authorization (CampaignGate, KnowledgeBaseGate, ContentItemGate)
+    ├── Job/              # Queue jobs (ProcessDocumentJob)
+    ├── Pipeline/         # AgentPipeline with pluggable ContextBuilderRegistry
+    ├── Repository/       # KnowledgeBaseRepository — deep seam over pgvector
+    ├── Service/          # Split services: UsageQuota, ApiKeyResolver, AgentPromptRegistry
+    ├── Flow/             # OnboardingFlow — business rule orchestration
+    └── Context/Builder/  # Pluggable agent context builders (KB, GSC)
 ```
 
 ### Design Decisions
@@ -39,15 +44,17 @@ app/dashboard/src/
 - **Context builders over private pipeline methods** — Adding a new agent context source means registering a builder, not editing the pipeline
 - **Split services over god services** — `UserSettingsService` facade delegates to `UsageQuota`, `ApiKeyResolver`, `AgentPromptRegistry`
 - **Repository over shallow service** — `KnowledgeBaseRepository` replaces `VectorSearchService` with a richer query seam
+- **Queue worker for heavy lifting** — Document processing (chunking + embedding) runs async via `ProcessDocumentJob`
 
 ## Features
 
 - **Campaign Management** — Create, edit, archive, and export marketing campaigns
 - **AI Agent Chat** — 4 agent types (Social, Content, SEO, Brainstorm) with session persistence
-- **Knowledge Base** — Upload TXT/PDF/DOCX, automatic chunking, pgvector similarity search
+- **Knowledge Base** — Upload TXT, MD, PDF, DOCX; scrape websites via URL; automatic chunking; pgvector similarity search
 - **Content Workflow** — Draft → Approved → Scheduled → Published status transitions
 - **GSC Integration** — Google Search Console OAuth for SEO agent enrichment
 - **Tier System** — Free (10 runs/day) and Pro (unlimited) with BYOK support
+- **Background Jobs** — Document embedding processed asynchronously via queue worker
 
 ## Tech Stack
 
@@ -56,11 +63,30 @@ app/dashboard/src/
 | Framework | Marko PHP 0.5.0 |
 | Frontend | React 19 + Inertia.js + Tailwind CSS v4 + Vite |
 | Database | PostgreSQL 16 with pgvector extension |
+| Queue | Database-backed (`marko/queue-database`) with Docker worker |
+| Cache | File-based (`marko/cache-file`) |
+| Logging | File-based (`marko/log-file`) |
+| Filesystem | Local (`marko/filesystem-local`) |
 | LLM | OpenRouter API (GPT-4o Mini default) |
-| Auth | Session-based (Marko Authentication) |
+| Auth | Session-based (`marko/authentication`) |
+| Validation | `marko/validation` with 422 error responses |
 | Testing | Pest PHP 4.0 + Playwright E2E |
 
 ## Getting Started
+
+### Docker (Recommended)
+
+```bash
+# Build and start all services
+docker compose up -d --build
+
+# Run migrations
+./vendor/bin/marko migrate
+
+# The app is available at http://localhost:8080
+```
+
+### Local Development
 
 ```bash
 # Install dependencies
@@ -68,7 +94,7 @@ composer install
 npm install
 
 # Start PostgreSQL (Docker)
-docker compose up -d
+docker compose up -d postgres
 
 # Run migrations
 ./vendor/bin/marko migrate
@@ -78,10 +104,22 @@ docker compose up -d
 npm run dev             # Vite on localhost:5173
 ```
 
+## Queue Worker
+
+The worker processes background jobs (e.g., document embedding) from the database queue:
+
+```bash
+# Run manually
+docker compose up -d worker
+
+# Or run directly
+php vendor/bin/marko queue:work
+```
+
 ## Testing
 
 ```bash
-# PHP unit + integration tests (201 tests, 370 assertions)
+# PHP unit + integration tests (201 tests, 370+ assertions)
 php vendor/bin/pest
 
 # E2E tests with Playwright
