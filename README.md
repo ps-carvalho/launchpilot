@@ -74,10 +74,10 @@ app/
 
 ## Getting Started
 
-### Docker (Recommended)
+### Quick Start — Docker (Recommended)
 
 ```bash
-# Build and start all services
+# Build and start all services (app, worker, nginx, postgres)
 docker compose up -d --build
 
 # Run migrations
@@ -86,7 +86,29 @@ docker compose up -d --build
 # The app is available at http://localhost:8080
 ```
 
-### Local Development
+All three app targets (`app`, `worker`, `nginx`) are built together from the same base so asset hashes stay in sync. The Dockerfile purges stale `public/build` artifacts before each build to prevent old hashed files from leaking into new images.
+
+### Active Development — Live Reloading
+
+For day-to-day development with live code reloading and Vite HMR:
+
+```bash
+# Start infrastructure (postgres + worker + nginx with volume mounts)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+# Run migrations
+./vendor/bin/marko migrate
+
+# Start Vite dev server on your host for HMR
+npm run dev
+
+# App:        http://localhost:8080  (nginx → PHP-FPM)
+# Vite HMR:   http://localhost:5173  (dev server, proxied for assets)
+```
+
+The dev override mounts your local `./app`, `./config`, `./modules`, and `./public` directories so PHP and frontend changes are reflected immediately without rebuilding containers.
+
+### Local Development — No Docker (except PostgreSQL)
 
 ```bash
 # Install dependencies
@@ -106,15 +128,20 @@ npm run dev             # Vite on localhost:5173
 
 ## Queue Worker
 
-The worker processes background jobs (e.g., document embedding) from the database queue:
+The worker processes background jobs (e.g., document chunking + embedding) from the database queue:
 
 ```bash
-# Run manually
+# Docker (runs automatically with docker compose up -d)
 docker compose up -d worker
 
-# Or run directly
+# Or run directly for debugging
 php vendor/bin/marko queue:work
+
+# Process one job and exit
+php vendor/bin/marko queue:work --once
 ```
+
+Jobs are dispatched automatically when you upload documents or scrape URLs. The worker requires `OPENROUTER_API_KEY` to generate embeddings.
 
 ## Testing
 

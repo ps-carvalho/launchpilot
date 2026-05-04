@@ -44,8 +44,8 @@ WORKDIR /var/www
 # Copy fully-built application from base stage
 COPY --from=app-base /var/www /var/www
 
-# Ensure storage is writable
-RUN mkdir -p /var/www/storage/sessions /var/www/storage/logs \
+# Ensure storage directories exist and are writable
+RUN mkdir -p /var/www/storage/sessions /var/www/storage/logs /var/www/storage/cache /var/www/storage/views /var/www/storage/media \
     && chown -R www-data:www-data /var/www/storage
 
 USER www-data

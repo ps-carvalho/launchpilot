@@ -19,6 +19,15 @@ services:
     networks:
       - launchpilot
 
+  redis:
+    image: redis:7-alpine
+    container_name: launchpilot-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - launchpilot
+
   app:
     build:
       context: .
@@ -47,8 +56,11 @@ services:
       LOG_PATH: storage/logs
       LOG_LEVEL: info
       LOG_CHANNEL: launchpilot
-      CACHE_DRIVER: file
-      CACHE_PATH: storage/cache
+      CACHE_DRIVER: redis
+      CACHE_REDIS_HOST: redis
+      CACHE_REDIS_PORT: 6379
+      CACHE_REDIS_DB: 0
+      CACHE_REDIS_PREFIX: "launchpilot:cache:"
       CACHE_TTL: 3600
       QUEUE_DRIVER: database
     volumes:
@@ -56,6 +68,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - launchpilot
 
@@ -86,8 +100,11 @@ services:
       LOG_PATH: storage/logs
       LOG_LEVEL: info
       LOG_CHANNEL: launchpilot
-      CACHE_DRIVER: file
-      CACHE_PATH: storage/cache
+      CACHE_DRIVER: redis
+      CACHE_REDIS_HOST: redis
+      CACHE_REDIS_PORT: 6379
+      CACHE_REDIS_DB: 0
+      CACHE_REDIS_PREFIX: "launchpilot:cache:"
       CACHE_TTL: 3600
       QUEUE_DRIVER: database
     volumes:
@@ -95,6 +112,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - launchpilot
 
@@ -116,6 +135,7 @@ services:
 volumes:
   postgres_data:
   app_storage:
+  redis_data:
 
 networks:
   launchpilot:
