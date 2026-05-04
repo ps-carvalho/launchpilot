@@ -31,6 +31,11 @@ class AgentModelResolver
             'temperature' => 0.7,
             'max_tokens' => 2000,
         ],
+        'audio' => [
+            'model' => 'sesame/csm-1b',
+            'temperature' => 0.7,
+            'max_tokens' => 2000,
+        ],
     ];
 
     /** @var array<string, array<int, array{value: string, label: string}>> */
@@ -57,6 +62,9 @@ class AgentModelResolver
             ['value' => 'google/veo-3.1-lite', 'label' => 'Veo 3.1 Lite (Cheapest)'],
             ['value' => 'alibaba/wan-2.7', 'label' => 'Wan 2.7 (Open Source)'],
             ['value' => 'bytedance/seedance-2.0', 'label' => 'Seedance 2.0 (Character Consistency)'],
+        ],
+        'audio' => [
+            ['value' => 'sesame/csm-1b', 'label' => 'Sesame CSM 1B (Conversational)'],
         ],
     ];
 

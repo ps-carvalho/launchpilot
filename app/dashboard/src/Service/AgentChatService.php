@@ -209,6 +209,57 @@ class AgentChatService
     }
 
     /**
+     * Generate an audio clip via OpenRouter TTS.
+     *
+     * @param array{model?: string, voice?: string} $modelConfig
+     * @return string|null Raw audio binary, or null on failure.
+     */
+    public function generateAudio(int $userId, string $prompt, array $modelConfig = []): ?string
+    {
+        $apiKey = $this->apiKeyResolver->resolve($userId);
+
+        if (empty($apiKey)) {
+            return null;
+        }
+
+        $model = $modelConfig['model'] ?? 'openai/gpt-4o-mini-tts';
+        $voice = $modelConfig['voice'] ?? 'alloy';
+
+        $body = json_encode([
+            'model' => $model,
+            'input' => $prompt,
+            'voice' => $voice,
+            'response_format' => 'mp3',
+        ]);
+
+        $response = $this->http->post(
+            'https://openrouter.ai/api/v1/audio/speech',
+            $body,
+            [
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $apiKey,
+                'HTTP-Referer' => 'https://launchpilot.ai',
+                'X-Title' => 'LaunchPilot',
+            ],
+            120
+        );
+
+        if ($response === null) {
+            return null;
+        }
+
+        if ($response['status'] !== 200) {
+            $this->logger->error('OpenRouter audio API error', [
+                'status' => $response['status'],
+                'body_preview' => substr($response['body'] ?? '', 0, 200),
+            ]);
+            return null;
+        }
+
+        return $response['body'];
+    }
+
+    /**
      * Stream a text response token-by-token via OpenRouter SSE.
      * Calls $onToken for each token chunk as it arrives from the API.
      *

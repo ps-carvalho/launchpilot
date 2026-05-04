@@ -19,6 +19,7 @@ const MODES = [
     { key: 'text', label: 'Text', icon: '📝', description: 'Content, copy, strategy' },
     { key: 'image', label: 'Image', icon: '🖼️', description: 'Generate visuals' },
     { key: 'video', label: 'Video', icon: '🎬', description: 'Scripts & video generation' },
+    { key: 'audio', label: 'Audio', icon: '🔊', description: 'Generate voice clips' },
 ];
 
 const PROMPT_TEMPLATES = {
@@ -37,6 +38,11 @@ const PROMPT_TEMPLATES = {
         { id: 'explainer', label: 'Explainer Script', template: 'Write a {duration}-second explainer video script about {topic}. Hook, problem, solution, CTA. Read time check included.' },
         { id: 'product_demo', label: 'Product Demo', template: 'Script a {duration}-second product demo video for {product}. Focus on {feature}. Tone: {tone}.' },
         { id: 'social_reel', label: 'Social Reel', template: 'A {duration}-second vertical social reel script about {topic}. Fast-paced, trend-aware, with on-screen text cues.' },
+    ],
+    audio: [
+        { id: 'voiceover', label: 'Voiceover', template: 'A calm, professional voiceover script for {topic}. Tone: {tone}. Pace: {pace}.' },
+        { id: 'podcast_intro', label: 'Podcast Intro', template: 'A catchy 15-second podcast intro for {show_name}. Energetic, memorable, with a tagline.' },
+        { id: 'announcement', label: 'Announcement', template: 'A clear, engaging audio announcement about {topic}. Include urgency and a call to action.' },
     ],
 };
 
@@ -66,6 +72,7 @@ export default function CampaignShow({ campaign: initialCampaign, contentItems: 
         text_content: 'Text',
         image: 'Image',
         video: 'Video',
+        audio: 'Audio',
     };
 
     const updateStatus = async (itemId, nextStatus) => {
@@ -170,6 +177,26 @@ export default function CampaignShow({ campaign: initialCampaign, contentItems: 
             }
         } catch (e) {
             console.error('Poll failed', e);
+        }
+    };
+
+    const downloadMedia = (assetId) => {
+        window.open(`/api/media/${assetId}/download`, '_blank');
+    };
+
+    const deleteMedia = async (assetId) => {
+        if (!confirm('Delete this media asset?')) return;
+        try {
+            const res = await fetch(`/api/media/${assetId}/delete`, {
+                method: 'POST',
+                credentials: 'same-origin',
+            });
+            const data = await res.json();
+            if (data.message) {
+                setMediaAssets((prev) => prev.filter((a) => a.id !== assetId));
+            }
+        } catch (e) {
+            alert('Failed to delete media.');
         }
     };
 
@@ -414,11 +441,34 @@ export default function CampaignShow({ campaign: initialCampaign, contentItems: 
                                                             </button>
                                                         </div>
                                                     )}
+                                                    {asset.type === 'audio' && asset.status === 'ready' && asset.local_path && (
+                                                        <audio
+                                                            src={`/storage/media/${asset.campaign_id}/${asset.local_path.split('/').pop()}`}
+                                                            controls
+                                                            className="w-full rounded-lg mb-2"
+                                                        />
+                                                    )}
                                                     {asset.type === 'video' && asset.status === 'failed' && (
                                                         <div className="text-xs text-red-500 py-2">Generation failed.</div>
                                                     )}
                                                     <div className="text-xs text-muted line-clamp-2">
                                                         {JSON.parse(asset.metadata || '{}').prompt || ''}
+                                                    </div>
+                                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                                        {asset.local_path && (
+                                                            <button
+                                                                onClick={() => downloadMedia(asset.id)}
+                                                                className="text-xs text-accent hover:text-accent/80 underline font-medium transition-colors"
+                                                            >
+                                                                Download
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => deleteMedia(asset.id)}
+                                                            className="text-xs text-red-500 hover:text-red-700 underline transition-colors"
+                                                        >
+                                                            Delete
+                                                        </button>
                                                     </div>
                                                 </div>
                                             ))}

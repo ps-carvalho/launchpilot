@@ -27,12 +27,14 @@ export default function AgentChat({
         text: 'bg-blue-50/80 border-blue-100',
         image: 'bg-purple-50/80 border-purple-100',
         video: 'bg-rose-50/80 border-rose-100',
+        audio: 'bg-amber-50/80 border-amber-100',
     };
 
     const modeAccentColors = {
         text: 'text-blue-700',
         image: 'text-purple-700',
         video: 'text-rose-700',
+        audio: 'text-amber-700',
     };
 
     useEffect(() => {
@@ -75,8 +77,9 @@ export default function AgentChat({
         // Free tier: use defaults
         const defaults = {
             text: 'meta-llama/llama-3.3-70b-instruct',
-            image: 'black-forest-labs/flux-2-schnell',
+            image: 'google/gemini-3.1-flash-image-preview',
             video: 'google/veo-3.1-lite',
+            audio: 'sesame/csm-1b',
         };
         return defaults[activeMode] || defaults.text;
     };
@@ -194,6 +197,11 @@ export default function AgentChat({
                 // Handle video job submission
                 if (activeMode === 'video' && data.message.asset_id) {
                     setTimeout(() => onPollVideo(data.message.asset_id), 5000);
+                }
+
+                // Handle audio generation results
+                if (activeMode === 'audio' && data.message.asset) {
+                    onMediaAsset(data.message.asset);
                 }
             } else if (data.error) {
                 setMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${data.error}` }]);
@@ -342,11 +350,13 @@ export default function AgentChat({
                             {activeMode === 'text' && 'Start a conversation with the agent.'}
                             {activeMode === 'image' && 'Describe the image you want to generate.'}
                             {activeMode === 'video' && 'Describe the video you want to create.'}
+                            {activeMode === 'audio' && 'Describe the audio clip you want to generate.'}
                         </p>
                         <p className="text-xs text-muted mt-1">
                             {activeMode === 'text' && 'Example: "Write me 5 LinkedIn posts about my product"'}
                             {activeMode === 'image' && 'Example: "A modern SaaS dashboard hero image, blue gradient, clean UI"'}
                             {activeMode === 'video' && 'Example: "30-second explainer for a fitness app, energetic tone"'}
+                            {activeMode === 'audio' && 'Example: "A calm, professional voiceover welcoming new users"'}
                         </p>
                     </div>
                 )}
@@ -421,7 +431,7 @@ export default function AgentChat({
                                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent animate-bounce" style={{ animationDelay: '0ms' }} />
                                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent animate-bounce" style={{ animationDelay: '150ms' }} />
                                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent animate-bounce" style={{ animationDelay: '300ms' }} />
-                                {activeMode === 'image' ? 'Generating image' : activeMode === 'video' ? 'Submitting video job' : 'Agent is thinking'}
+                                {activeMode === 'image' ? 'Generating image' : activeMode === 'video' ? 'Submitting video job' : activeMode === 'audio' ? 'Generating audio' : 'Agent is thinking'}
                             </span>
                         </div>
                     </div>
@@ -460,6 +470,7 @@ export default function AgentChat({
                             placeholder={
                                 activeMode === 'text' ? 'Ask the agent...' :
                                 activeMode === 'image' ? 'Describe the image you want...' :
+                                activeMode === 'audio' ? 'Describe the audio clip you want...' :
                                 'Describe the video you want...'
                             }
                             className="flex-1 rounded-lg border border-line bg-paper px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all resize-none"
@@ -477,7 +488,7 @@ export default function AgentChat({
                             disabled={loading || !input.trim()}
                             className="rounded-lg bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink/90 shadow-elevation-1 hover:shadow-elevation-2 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 self-end"
                         >
-                            {activeMode === 'image' ? 'Generate' : activeMode === 'video' ? 'Create' : 'Send'}
+                            {activeMode === 'image' ? 'Generate' : activeMode === 'video' ? 'Create' : activeMode === 'audio' ? 'Generate' : 'Send'}
                         </button>
                     </div>
                 </div>

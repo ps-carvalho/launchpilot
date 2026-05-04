@@ -63,6 +63,7 @@ class AgentPipeline
         return match ($modality) {
             'image' => $this->runImage($userId, $campaignId, $message, $modelConfig),
             'video' => $this->runVideo($userId, $campaignId, $message, $modelConfig),
+            'audio' => $this->runAudio($userId, $campaignId, $message, $modelConfig),
             default => $this->runText($userId, $campaignId, $modality, $message, $modelConfig),
         };
     }
@@ -209,6 +210,53 @@ class AgentPipeline
     }
 
     /**
+     * @param array{model: string, temperature: float, max_tokens: int} $modelConfig
+     * @return array{response: array<string, mixed>, session_id: int, remaining_runs: int, model: string}
+     */
+    private function runAudio(int $userId, int $campaignId, string $message, array $modelConfig): array
+    {
+        $audioData = $this->chatService->generateAudio($userId, $message, $modelConfig);
+
+        if ($audioData === null) {
+            throw new \RuntimeException('Failed to generate audio.');
+        }
+
+        $dir = '/var/www/storage/media/' . $campaignId;
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $filename = uniqid('audio_') . '.mp3';
+        $localPath = $dir . '/' . $filename;
+        file_put_contents($localPath, $audioData);
+
+        $assetId = $this->queryFactory->create()->table('media_assets')->insert([
+            'campaign_id' => $campaignId,
+            'type' => 'audio',
+            'local_path' => $localPath,
+            'status' => 'ready',
+            'metadata' => json_encode(['prompt' => $message, 'model' => $modelConfig['model']]),
+        ]);
+
+        $this->usageQuota->recordRun($userId);
+
+        $asset = $this->queryFactory->create()->table('media_assets')
+            ->where('id', '=', $assetId)
+            ->first();
+
+        return [
+            'response' => [
+                'role' => 'assistant',
+                'content' => 'Audio clip generated.',
+                'asset' => $asset,
+            ],
+            'session_id' => 0,
+            'remaining_runs' => $this->usageQuota->remaining($userId),
+            'model' => $modelConfig['model'],
+        ];
+    }
+
+    /**
      * @param array<int, array{role: string, content: string, timestamp: string}> $history
      */
     private function persistSession(int $campaignId, string $modality, int $userId, array $history, ?int $existingId): int
@@ -236,7 +284,7 @@ class AgentPipeline
     {
         return match ($modality) {
             'social', 'content', 'seo', 'brainstorm', 'media', 'text' => 'text',
-            'image', 'video' => $modality,
+            'image', 'video', 'audio' => $modality,
             default => 'text',
         };
     }
