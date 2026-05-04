@@ -68,6 +68,6 @@ class GscContextBuilder implements AgentContextBuilder
 
     public function supports(string $agentType): bool
     {
-        return $agentType === 'seo';
+        return $agentType === 'seo' || $agentType === 'text';
     }
 }

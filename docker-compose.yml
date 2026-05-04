@@ -3,8 +3,7 @@ services:
     image: pgvector/pgvector:pg16
     container_name: launchpilot-db
     restart: unless-stopped
-    ports:
-      - "5432:5432"
+    # Internal network only — no exposed ports
     environment:
       POSTGRES_DB: launchpilot
       POSTGRES_USER: launchpilot
@@ -17,6 +16,60 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - launchpilot
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    container_name: launchpilot-app
+    restart: unless-stopped
+    # Internal network only — PHP-FPM on 9000, not exposed externally
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_KEY: base64:launchpilotappkey1234567890123456
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-$ZcKdbYlimX9aIQ5H7LkV1pxPmNbsuOVY9IPNuNQTVUI=}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_EMBEDDING_MODEL: ${OPENROUTER_EMBEDDING_MODEL:-openai/text-embedding-3-small}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: launchpilot
+      DB_USERNAME: launchpilot
+      DB_PASSWORD: launchpilot
+      VITE_USE_DEV_SERVER: "false"
+      INERTIA_SSR_ENABLED: "false"
+      SESSION_DRIVER: file
+    volumes:
+      - app_storage:/var/www/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - launchpilot
+
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: nginx
+    container_name: launchpilot-nginx
+    restart: unless-stopped
+    # Only exposed port — nginx serves the app on 8080
+    ports:
+      - "8080:80"
+    depends_on:
+      - app
+    networks:
+      - launchpilot
 
 volumes:
   postgres_data:
+  app_storage:
+
+networks:
+  launchpilot:
+    driver: bridge

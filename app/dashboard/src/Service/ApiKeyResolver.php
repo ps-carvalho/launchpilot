@@ -26,7 +26,7 @@ class ApiKeyResolver
             return $settings['openrouter_api_key'];
         }
 
-        return $_ENV['OPENROUTER_API_KEY'] ?? '';
+        return getenv('OPENROUTER_API_KEY') ?: '';
     }
 
     public function hasCustomKey(int $userId): bool

@@ -19,7 +19,13 @@ class ContentItemGate
 
     public function itemForUser(int $userId, int $itemId): ?array
     {
-        return $this->workspaceAuth->contentItemFor($userId, $itemId);
+        $item = $this->workspaceAuth->contentItemFor($userId, $itemId);
+
+        if ($item !== null && $item['deleted_at'] !== null) {
+            return null;
+        }
+
+        return $item;
     }
 
     /**
@@ -29,6 +35,7 @@ class ContentItemGate
     {
         return $this->queryFactory->create()->table('content_items')
             ->where('campaign_id', '=', $campaignId)
+            ->whereNull('deleted_at')
             ->orderBy('created_at', 'DESC')
             ->get();
     }

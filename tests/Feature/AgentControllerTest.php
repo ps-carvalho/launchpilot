@@ -23,16 +23,16 @@ describe('getSession', function () {
 
         $this->query()->create()->table('agent_sessions')->insert([
             'campaign_id' => $campaignId,
-            'agent_type' => 'social',
+            'agent_type' => 'text',
             'user_id' => $userId,
             'messages' => json_encode($messages),
         ]);
 
-        $response = $this->controller->getSession($campaignId, 'social');
+        $response = $this->controller->getSession($campaignId, 'text');
         $data = json_decode($response->body(), true);
 
         expect($response->statusCode())->toBe(200)
-            ->and($data['session']['agent_type'])->toBe('social')
+            ->and($data['session']['modality'])->toBe('text')
             ->and($data['messages'])->toHaveCount(2);
     });
 
@@ -42,7 +42,7 @@ describe('getSession', function () {
         $wsId = $this->createWorkspace($userId);
         $campaignId = $this->createCampaign($wsId);
 
-        $response = $this->controller->getSession($campaignId, 'social');
+        $response = $this->controller->getSession($campaignId, 'text');
         $data = json_decode($response->body(), true);
 
         expect($response->statusCode())->toBe(200)
@@ -59,12 +59,12 @@ describe('getSession', function () {
 
         $this->query()->create()->table('agent_sessions')->insert([
             'campaign_id' => $campaignId,
-            'agent_type' => 'social',
+            'agent_type' => 'text',
             'user_id' => $userId1,
             'messages' => json_encode([['role' => 'user', 'content' => 'Hello']]),
         ]);
 
-        $response = $this->controller->getSession($campaignId, 'social');
+        $response = $this->controller->getSession($campaignId, 'text');
         $data = json_decode($response->body(), true);
 
         expect($data['session'])->toBeNull();
@@ -99,7 +99,7 @@ describe('chat', function () {
             body: '',
         );
 
-        $response = $this->controller->chat($request, $campaignId, 'social');
+        $response = $this->controller->chat($request, $campaignId, 'text');
         $data = json_decode($response->body(), true);
 
         expect($response->statusCode())->toBe(200)
@@ -210,18 +210,18 @@ describe('saveToCampaign', function () {
             body: '',
         );
 
-        $response = $this->controller->saveToCampaign($request, $campaignId, 'social');
+        $response = $this->controller->saveToCampaign($request, $campaignId, 'text');
         $data = json_decode($response->body(), true);
 
         expect($response->statusCode())->toBe(200)
             ->and($data['item_id'])->toBeInt()
-            ->and($data['message'])->toContain('saved');
+            ->and($data['message'])->toContain('Saved');
 
         $item = $this->query()->create()->table('content_items')
             ->where('id', '=', $data['item_id'])
             ->first();
         expect($item['content'])->toBe('Generated post')
-            ->and($item['type'])->toBe('social_post')
+            ->and($item['type'])->toBe('text_content')
             ->and($item['platform'])->toBe('linkedin')
             ->and($item['status'])->toBe('draft');
     });
@@ -239,13 +239,13 @@ describe('saveToCampaign', function () {
             body: '',
         );
 
-        $response = $this->controller->saveToCampaign($request, $campaignId, 'content');
+        $response = $this->controller->saveToCampaign($request, $campaignId, 'text');
         $data = json_decode($response->body(), true);
 
         $item = $this->query()->create()->table('content_items')
             ->where('id', '=', $data['item_id'])
             ->first();
-        expect($item['type'])->toBe('blog_post');
+        expect($item['type'])->toBe('text_content');
     });
 
     it('creates seo_report type for seo agent', function () {
@@ -261,13 +261,13 @@ describe('saveToCampaign', function () {
             body: '',
         );
 
-        $response = $this->controller->saveToCampaign($request, $campaignId, 'seo');
+        $response = $this->controller->saveToCampaign($request, $campaignId, 'text');
         $data = json_decode($response->body(), true);
 
         $item = $this->query()->create()->table('content_items')
             ->where('id', '=', $data['item_id'])
             ->first();
-        expect($item['type'])->toBe('seo_report');
+        expect($item['type'])->toBe('text_content');
     });
 
     it('creates brainstorm_note type for brainstorm agent', function () {
@@ -283,13 +283,13 @@ describe('saveToCampaign', function () {
             body: '',
         );
 
-        $response = $this->controller->saveToCampaign($request, $campaignId, 'brainstorm');
+        $response = $this->controller->saveToCampaign($request, $campaignId, 'text');
         $data = json_decode($response->body(), true);
 
         $item = $this->query()->create()->table('content_items')
             ->where('id', '=', $data['item_id'])
             ->first();
-        expect($item['type'])->toBe('brainstorm_note');
+        expect($item['type'])->toBe('text_content');
     });
 
     it('returns 422 when content is empty', function () {
@@ -305,46 +305,32 @@ describe('saveToCampaign', function () {
             body: '',
         );
 
-        $response = $this->controller->saveToCampaign($request, $campaignId, 'social');
+        $response = $this->controller->saveToCampaign($request, $campaignId, 'text');
         $data = json_decode($response->body(), true);
 
         expect($response->statusCode())->toBe(422)
-            ->and($data['error'])->toContain('Content is required');
+            ->and($data['error'])->toContain('Content or media asset is required');
     });
 
-    it('links to most recent session', function () {
+    it('creates image type for image modality', function () {
         $userId = $this->createUser();
         $this->loginAsUser($userId);
         $wsId = $this->createWorkspace($userId);
         $campaignId = $this->createCampaign($wsId);
 
-        $olderSession = $this->query()->create()->table('agent_sessions')->insert([
-            'campaign_id' => $campaignId,
-            'agent_type' => 'social',
-            'user_id' => $userId,
-            'messages' => '[]',
-        ]);
-
-        $newerSession = $this->query()->create()->table('agent_sessions')->insert([
-            'campaign_id' => $campaignId,
-            'agent_type' => 'social',
-            'user_id' => $userId,
-            'messages' => '[]',
-        ]);
-
         $request = new \Marko\Routing\Http\Request(
             server: ['REQUEST_METHOD' => 'POST'],
             query: [],
-            post: ['content' => 'Test'],
+            post: ['content' => 'Image desc'],
             body: '',
         );
 
-        $response = $this->controller->saveToCampaign($request, $campaignId, 'social');
+        $response = $this->controller->saveToCampaign($request, $campaignId, 'image');
         $data = json_decode($response->body(), true);
 
         $item = $this->query()->create()->table('content_items')
             ->where('id', '=', $data['item_id'])
             ->first();
-        expect((int) $item['agent_session_id'])->toBe($newerSession);
+        expect($item['type'])->toBe('image');
     });
 });

@@ -4,7 +4,7 @@ import AppShell from '../../Components/AppShell';
 
 export default function SettingsIndex({ settings, gsc_configured }) {
     const [apiKey, setApiKey] = useState('');
-    const [customPrompts, setCustomPrompts] = useState({ social: '', content: '', seo: '', brainstorm: '' });
+    const [customPrompts, setCustomPrompts] = useState({ social: '', content: '', seo: '', media: '' });
     const [saved, setSaved] = useState(false);
 
     const handleSaveApiKey = async () => {
@@ -135,7 +135,7 @@ export default function SettingsIndex({ settings, gsc_configured }) {
                     <div className={`rounded-xl border border-line/60 bg-white p-6 shadow-elevation-1 ${settings.tier !== 'pro' ? 'opacity-50' : ''}`}>
                         <h2 className="text-sm font-bold mb-2">Custom Agent Prompts</h2>
                         <p className="text-sm text-muted mb-4">Override the default system prompts for each agent.</p>
-                        {['social', 'content', 'seo', 'brainstorm'].map((agent) => (
+                        {['social', 'content', 'seo', 'media'].map((agent) => (
                             <div key={agent} className="mb-4">
                                 <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1 capitalize">{agent} Agent</label>
                                 <textarea

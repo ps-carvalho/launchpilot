@@ -6,7 +6,9 @@ namespace App\Dashboard\Controller;
 
 use App\Dashboard\Context\UserContext;
 use App\Dashboard\Gate\CampaignGate;
+use App\Dashboard\Gate\ContentItemGate;
 use App\Dashboard\Http\RequestBodyParser;
+use App\Dashboard\Service\AgentModelResolver;
 use App\Dashboard\Service\ExportService;
 use App\Dashboard\Service\UsageQuota;
 use Marko\Authentication\Middleware\AuthMiddleware;
@@ -31,9 +33,11 @@ class CampaignController
         private readonly UserContext $userContext,
         private readonly QueryBuilderFactoryInterface $queryFactory,
         private readonly CampaignGate $campaignGate,
+        private readonly ContentItemGate $contentItemGate,
         private readonly RequestBodyParser $bodyParser,
         private readonly UsageQuota $usageQuota,
         private readonly ExportService $exportService,
+        private readonly AgentModelResolver $agentModelResolver,
     ) {}
 
     #[Get('/campaigns')]
@@ -78,10 +82,7 @@ class CampaignController
             return Response::redirect('/campaigns');
         }
 
-        $contentItems = $this->queryFactory->create()->table('content_items')
-            ->where('campaign_id', '=', $id)
-            ->orderBy('created_at', 'DESC')
-            ->get();
+        $contentItems = $this->contentItemGate->itemsForCampaign($id);
 
         $sessions = $this->queryFactory->create()->table('agent_sessions')
             ->where('campaign_id', '=', $id)
@@ -90,12 +91,23 @@ class CampaignController
             ->get();
 
         $remainingRuns = $this->usageQuota->remaining($userId);
+        $isPro = $this->usageQuota->tier($userId) === 'pro';
+        $agentModels = $isPro ? $this->agentModelResolver->getUserModels($userId) : [];
+
+        $mediaAssets = $this->queryFactory->create()->table('media_assets')
+            ->where('campaign_id', '=', $id)
+            ->orderBy('created_at', 'DESC')
+            ->get();
 
         return $this->inertia->render($request, 'Campaign/Show', [
             'campaign' => $campaign,
             'contentItems' => $contentItems,
             'sessions' => $sessions,
             'remainingRuns' => $remainingRuns,
+            'isPro' => $isPro,
+            'agentModels' => $agentModels,
+            'mediaAssets' => $mediaAssets,
+            'modalityModels' => $this->agentModelResolver->availableModels(),
         ]);
     }
 

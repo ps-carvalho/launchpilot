@@ -89,4 +89,21 @@ class ContentItemController
 
         return Response::json(['success' => true]);
     }
+
+    #[Post('/api/content-items/{id}/delete')]
+    public function delete(int $id): Response
+    {
+        $item = $this->itemGate->itemForUser($this->userContext->id(), $id);
+        if ($item === null) {
+            return Response::json(['error' => 'Not found.'], 404);
+        }
+
+        $this->queryFactory->create()->table('content_items')
+            ->where('id', '=', $id)
+            ->update([
+                'deleted_at' => date('Y-m-d H:i:s'),
+            ]);
+
+        return Response::json(['success' => true]);
+    }
 }

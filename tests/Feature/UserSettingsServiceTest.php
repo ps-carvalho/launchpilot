@@ -185,7 +185,7 @@ describe('getRemainingRuns', function () {
 describe('getEffectiveApiKey', function () {
     it('returns env key for free user', function () {
         $userId = $this->createUser();
-        $_ENV['OPENROUTER_API_KEY'] = 'env-key-123';
+        putenv('OPENROUTER_API_KEY=env-key-123');
 
         expect($this->service->getEffectiveApiKey($userId))->toBe('env-key-123');
     });
@@ -205,7 +205,7 @@ describe('getEffectiveApiKey', function () {
 
     it('falls back to env key when pro user has no custom key', function () {
         $userId = $this->createUser();
-        $_ENV['OPENROUTER_API_KEY'] = 'fallback-key';
+        putenv('OPENROUTER_API_KEY=fallback-key');
 
         $this->query()->create()->table('user_settings')->insert([
             'user_id' => $userId,
