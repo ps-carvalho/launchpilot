@@ -22,7 +22,7 @@ class AgentModelResolver
             'max_tokens' => 2000,
         ],
         'image' => [
-            'model' => 'black-forest-labs/flux-2-schnell',
+            'model' => 'google/gemini-3.1-flash-image-preview',
             'temperature' => 0.7,
             'max_tokens' => 2000,
         ],
@@ -43,13 +43,12 @@ class AgentModelResolver
             ['value' => 'openai/gpt-4o-mini', 'label' => 'GPT-4o Mini (BYOK / Paid)'],
         ],
         'image' => [
-            ['value' => 'black-forest-labs/flux-2-pro', 'label' => 'FLUX.2 Pro (Highest Quality)'],
-            ['value' => 'black-forest-labs/flux-2-flex', 'label' => 'FLUX.2 Flex (Balanced)'],
-            ['value' => 'black-forest-labs/flux-2-schnell', 'label' => 'FLUX.2 Schnell (Fast, Free)'],
             ['value' => 'google/gemini-3.1-flash-image-preview', 'label' => 'Gemini 3.1 Flash Image (Fast)'],
+            ['value' => 'google/gemini-3-pro-image-preview', 'label' => 'Gemini 3 Pro Image (Quality)'],
+            ['value' => 'google/gemini-2.5-flash-image', 'label' => 'Gemini 2.5 Flash Image (Balanced)'],
             ['value' => 'openai/gpt-5-image-mini', 'label' => 'GPT-5 Image Mini (Efficient)'],
             ['value' => 'openai/gpt-5-image', 'label' => 'GPT-5 Image (Best Quality)'],
-            ['value' => 'bytedance-seed/seedream-4.5', 'label' => 'Seedream 4.5 (Editing)'],
+            ['value' => 'openai/gpt-5.4-image-2', 'label' => 'GPT-5.4 Image 2 (Latest)'],
         ],
         'video' => [
             ['value' => 'kwaivgi/kling-v3.0-pro', 'label' => 'Kling v3.0 Pro (Best Quality)'],
