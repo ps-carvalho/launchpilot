@@ -357,7 +357,7 @@ describe('search', function () {
         $body = json_decode($response->body(), true);
 
         expect($response->statusCode())->toBe(422)
-            ->and($body['error'])->toContain('Query is required');
+            ->and($body['errors']['q'])->toContain('The q field is required.');
     });
 
     it('returns 404 when no workspace exists', function () {

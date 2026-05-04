@@ -16,6 +16,7 @@ use Marko\Security\Contracts\CsrfTokenManagerInterface;
 use Marko\Security\Middleware\CsrfMiddleware;
 use Marko\Session\Contracts\SessionInterface;
 use Marko\Session\Middleware\SessionMiddleware;
+use Marko\Validation\Contracts\ValidatorInterface;
 use Marko\View\ViewInterface;
 
 #[Middleware([SessionMiddleware::class, CsrfMiddleware::class])]
@@ -28,6 +29,7 @@ class AuthController
         private readonly PasswordHasherInterface $hasher,
         private readonly CsrfTokenManagerInterface $csrf,
         private readonly SessionInterface $session,
+        private readonly ValidatorInterface $validator,
     ) {}
 
     #[Get('/login')]
@@ -42,9 +44,22 @@ class AuthController
     #[Post('/login')]
     public function login(Request $request): Response
     {
+        $data = $request->post();
+        $errors = $this->validator->validate($data, [
+            'email' => 'required|email',
+            'password' => 'required|string|min:6',
+        ]);
+
+        if ($errors->isNotEmpty()) {
+            foreach ($errors->toFlatArray() as $message) {
+                $this->session->flash()->add('error', $message);
+            }
+            return Response::redirect('/login');
+        }
+
         $credentials = [
-            'email' => $request->post('email'),
-            'password' => $request->post('password'),
+            'email' => $data['email'],
+            'password' => $data['password'],
         ];
 
         if ($this->auth->attempt($credentials)) {
@@ -68,9 +83,23 @@ class AuthController
     #[Post('/register')]
     public function register(Request $request): Response
     {
-        $name = $request->post('name');
-        $email = $request->post('email');
-        $password = $request->post('password');
+        $data = $request->post();
+        $errors = $this->validator->validate($data, [
+            'name' => 'required|string|min:2|max:255',
+            'email' => 'required|email',
+            'password' => 'required|string|min:6',
+        ]);
+
+        if ($errors->isNotEmpty()) {
+            foreach ($errors->toFlatArray() as $message) {
+                $this->session->flash()->add('error', $message);
+            }
+            return Response::redirect('/register');
+        }
+
+        $name = $data['name'];
+        $email = $data['email'];
+        $password = $data['password'];
 
         $existing = $this->queryFactory->create()->table('users')->where('email', '=', $email)->first();
 

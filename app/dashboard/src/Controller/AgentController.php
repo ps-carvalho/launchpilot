@@ -27,6 +27,7 @@ use Marko\Session\Middleware\SessionMiddleware;
 use Marko\Sse\SseEvent;
 use Marko\Sse\SseStream;
 use Marko\Sse\StreamingResponse;
+use Marko\Validation\Contracts\ValidatorInterface;
 
 #[Middleware([SessionMiddleware::class, AuthMiddleware::class, InertiaMiddleware::class])]
 class AgentController
@@ -43,6 +44,7 @@ class AgentController
         private readonly ContextBuilderRegistry $contextRegistry,
         private readonly CampaignGate $campaignGate,
         private readonly UsageQuota $usageQuota,
+        private readonly ValidatorInterface $validator,
     ) {}
 
     #[Get('/api/campaigns/{campaignId}/agents/{modality}/stream')]
@@ -162,11 +164,16 @@ class AgentController
     public function chat(Request $request, int $campaignId, string $modality): Response
     {
         $userId = $this->userContext->id();
-        $message = $this->bodyParser->get($request, 'message');
+        $data = $this->bodyParser->all($request);
+        $errors = $this->validator->validate($data, [
+            'message' => 'required|string|min:1',
+        ]);
 
-        if (empty($message)) {
-            return Response::json(['error' => 'Message is required.'], 422);
+        if ($errors->isNotEmpty()) {
+            return Response::json(['errors' => $errors->all()], 422);
         }
+
+        $message = $data['message'];
 
         try {
             $result = $this->agentPipeline->run($userId, $campaignId, $modality, $message);
@@ -187,9 +194,20 @@ class AgentController
     public function saveToCampaign(Request $request, int $campaignId, string $modality): Response
     {
         $userId = $this->userContext->id();
-        $content = $this->bodyParser->get($request, 'content');
-        $platform = $this->bodyParser->get($request, 'platform');
-        $mediaAssetId = $this->bodyParser->get($request, 'media_asset_id');
+        $data = $this->bodyParser->all($request);
+        $errors = $this->validator->validate($data, [
+            'content' => 'nullable|string',
+            'media_asset_id' => 'nullable|integer',
+            'platform' => 'nullable|string',
+        ]);
+
+        if ($errors->isNotEmpty()) {
+            return Response::json(['errors' => $errors->all()], 422);
+        }
+
+        $content = $data['content'] ?? null;
+        $platform = $data['platform'] ?? null;
+        $mediaAssetId = $data['media_asset_id'] ?? null;
 
         if (empty($content) && empty($mediaAssetId)) {
             return Response::json(['error' => 'Content or media asset is required.'], 422);

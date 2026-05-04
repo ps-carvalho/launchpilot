@@ -22,6 +22,7 @@ use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Session\Contracts\SessionInterface;
 use Marko\Session\Middleware\SessionMiddleware;
+use Marko\Validation\Contracts\ValidatorInterface;
 
 #[Middleware([SessionMiddleware::class, AuthMiddleware::class, InertiaMiddleware::class])]
 class KnowledgeBaseController
@@ -36,6 +37,7 @@ class KnowledgeBaseController
         private readonly KnowledgeBaseRepository $kbRepo,
         private readonly EmbeddingService $embedder,
         private readonly QueueInterface $queue,
+        private readonly ValidatorInterface $validator,
     ) {}
 
     #[Get('/knowledge-base')]
@@ -124,11 +126,16 @@ class KnowledgeBaseController
     #[Get('/api/knowledge-base/search')]
     public function search(Request $request): Response
     {
-        $query = $request->query('q') ?? '';
+        $data = ['q' => $request->query('q') ?? ''];
+        $errors = $this->validator->validate($data, [
+            'q' => 'required|string|min:1',
+        ]);
 
-        if (trim($query) === '') {
-            return Response::json(['error' => 'Query is required.', 'results' => []], 422);
+        if ($errors->isNotEmpty()) {
+            return Response::json(['errors' => $errors->all(), 'results' => []], 422);
         }
+
+        $query = $data['q'];
 
         $userId = $this->userContext->id();
         $workspace = $this->kbGate->firstWorkspaceForUser($userId);

@@ -83,7 +83,7 @@ abstract class TestCase extends BaseTestCase
         putenv('APP_DEBUG=true');
         putenv('DB_CONNECTION=pgsql');
         putenv('DB_HOST=127.0.0.1');
-        putenv('DB_PORT=' . (getenv('DB_PORT') ?: '5432'));
+        putenv('DB_PORT=5433');
         putenv('DB_DATABASE=launchpilot_test');
         putenv('DB_USERNAME=launchpilot');
         putenv('DB_PASSWORD=launchpilot');

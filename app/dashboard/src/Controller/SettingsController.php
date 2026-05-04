@@ -23,6 +23,7 @@ use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Session\Contracts\SessionInterface;
 use Marko\Session\Middleware\SessionMiddleware;
+use Marko\Validation\Contracts\ValidatorInterface;
 
 #[Middleware([SessionMiddleware::class, AuthMiddleware::class, InertiaMiddleware::class])]
 class SettingsController
@@ -39,6 +40,7 @@ class SettingsController
         private readonly WorkspaceAuthorization $workspaceAuth,
         private readonly SessionInterface $session,
         private readonly RequestBodyParser $bodyParser,
+        private readonly ValidatorInterface $validator,
     ) {}
 
     #[Get('/settings')]
@@ -136,7 +138,16 @@ class SettingsController
             return Response::json(['error' => 'Premium feature. Upgrade to Pro.'], 403);
         }
 
-        $key = $this->bodyParser->get($request, 'api_key');
+        $data = $this->bodyParser->all($request);
+        $errors = $this->validator->validate($data, [
+            'api_key' => 'nullable|string|min:10',
+        ]);
+
+        if ($errors->isNotEmpty()) {
+            return Response::json(['errors' => $errors->all()], 422);
+        }
+
+        $key = $data['api_key'] ?? null;
         $this->queryFactory->create()->table('user_settings')
             ->where('user_id', '=', $userId)
             ->update([
@@ -156,7 +167,16 @@ class SettingsController
             return Response::json(['error' => 'Premium feature. Upgrade to Pro.'], 403);
         }
 
-        $prompts = $this->bodyParser->get($request, 'prompts', []);
+        $data = $this->bodyParser->all($request);
+        $errors = $this->validator->validate($data, [
+            'prompts' => 'nullable|array',
+        ]);
+
+        if ($errors->isNotEmpty()) {
+            return Response::json(['errors' => $errors->all()], 422);
+        }
+
+        $prompts = $data['prompts'] ?? [];
         $this->promptRegistry->set($userId, $prompts);
 
         return Response::json(['success' => true]);
