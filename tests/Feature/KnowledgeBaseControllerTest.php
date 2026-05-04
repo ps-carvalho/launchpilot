@@ -190,7 +190,7 @@ describe('upload', function () {
 
         $session = $this->container()->get(\Marko\Session\Contracts\SessionInterface::class);
         $flash = $session->flash()->all();
-        expect($flash['error'] ?? [])->toContain('Unsupported file type. Please upload TXT, PDF, or DOCX files.');
+        expect($flash['error'] ?? [])->toContain('Unsupported file type. Please upload TXT, MD, PDF, or DOCX files.');
     });
 
     it('fails when no workspace exists', function () {

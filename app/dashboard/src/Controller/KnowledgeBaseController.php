@@ -89,6 +89,7 @@ class KnowledgeBaseController
         $allowedTypes = [
             'text/plain',
             'text/plain; charset=utf-8',
+            'text/markdown',
             'application/pdf',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/msword',
@@ -97,7 +98,7 @@ class KnowledgeBaseController
         $mimeType = $file['type'] ?: mime_content_type($file['tmp_name']);
 
         if (!in_array($mimeType, $allowedTypes, true)) {
-            $this->session->flash()->add('error', 'Unsupported file type. Please upload TXT, PDF, or DOCX files.');
+            $this->session->flash()->add('error', 'Unsupported file type. Please upload TXT, MD, PDF, or DOCX files.');
             return Response::redirect('/knowledge-base');
         }
 

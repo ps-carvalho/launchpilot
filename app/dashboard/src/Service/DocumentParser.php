@@ -12,7 +12,7 @@ class DocumentParser
     public function parse(string $filePath, string $mimeType): ?string
     {
         return match ($mimeType) {
-            'text/plain', 'text/plain; charset=utf-8' => $this->parseTxt($filePath),
+            'text/plain', 'text/plain; charset=utf-8', 'text/markdown' => $this->parseTxt($filePath),
             'application/pdf' => $this->parsePdf($filePath),
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/msword' => $this->parseDocx($filePath),
