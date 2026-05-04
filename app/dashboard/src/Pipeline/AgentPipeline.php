@@ -11,6 +11,7 @@ use App\Dashboard\Service\AgentModelResolver;
 use App\Dashboard\Service\UsageQuota;
 use App\Dashboard\Service\VideoGenerationService;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
+use Marko\Log\Contracts\LoggerInterface;
 
 class AgentPipeline
 {
@@ -22,6 +23,7 @@ class AgentPipeline
         private readonly UsageQuota $usageQuota,
         private readonly CampaignGate $campaignGate,
         private readonly AgentModelResolver $modelResolver,
+        private readonly LoggerInterface $logger,
     ) {}
 
     /**
@@ -32,17 +34,31 @@ class AgentPipeline
      */
     public function run(int $userId, int $campaignId, string $modality, string $message): array
     {
+        $this->logger->info('Agent pipeline started', [
+            'user_id' => $userId,
+            'campaign_id' => $campaignId,
+            'modality' => $modality,
+        ]);
+
         if (!$this->usageQuota->canRun($userId)) {
+            $this->logger->warning('Daily agent run limit reached', ['user_id' => $userId]);
             throw new \RuntimeException('Daily agent run limit reached.');
         }
 
         $campaign = $this->campaignGate->forUser($userId, $campaignId);
         if ($campaign === null) {
+            $this->logger->error('Campaign not found', ['user_id' => $userId, 'campaign_id' => $campaignId]);
             throw new \RuntimeException('Campaign not found.');
         }
 
         $modality = $this->normalizeModality($modality);
         $modelConfig = $this->modelResolver->resolve($userId, $modality);
+
+        $this->logger->info('Agent model resolved', [
+            'user_id' => $userId,
+            'modality' => $modality,
+            'model' => $modelConfig['model'] ?? 'default',
+        ]);
 
         return match ($modality) {
             'image' => $this->runImage($userId, $campaignId, $message, $modelConfig),
@@ -89,6 +105,11 @@ class AgentPipeline
         );
 
         if ($response === null) {
+            $this->logger->error('Agent chat returned null', [
+                'user_id' => $userId,
+                'modality' => $modality,
+                'model' => $modelConfig['model'] ?? 'default',
+            ]);
             throw new \RuntimeException('Failed to get response from agent.');
         }
 

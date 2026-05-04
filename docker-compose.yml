@@ -43,6 +43,14 @@ services:
       VITE_USE_DEV_SERVER: "false"
       INERTIA_SSR_ENABLED: "false"
       SESSION_DRIVER: file
+      LOG_DRIVER: file
+      LOG_PATH: storage/logs
+      LOG_LEVEL: info
+      LOG_CHANNEL: launchpilot
+      CACHE_DRIVER: file
+      CACHE_PATH: storage/cache
+      CACHE_TTL: 3600
+      QUEUE_DRIVER: database
     volumes:
       - app_storage:/var/www/storage
     depends_on:

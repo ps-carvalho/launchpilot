@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Dashboard\Service;
 
 use App\Dashboard\Http\HttpClientInterface;
+use Marko\Log\Contracts\LoggerInterface;
 
 class AgentChatService
 {
@@ -12,6 +13,7 @@ class AgentChatService
         private readonly ApiKeyResolver $apiKeyResolver,
         private readonly AgentPromptRegistry $promptRegistry,
         private readonly HttpClientInterface $http,
+        private readonly LoggerInterface $logger,
     ) {}
 
     /**
@@ -33,11 +35,18 @@ class AgentChatService
         $apiKey = $this->apiKeyResolver->resolve($userId);
 
         if (empty($apiKey)) {
+            $this->logger->warning('OpenRouter API key not configured', ['user_id' => $userId]);
             return [
                 'role' => 'assistant',
                 'content' => '⚠️ OpenRouter API key is not configured. Please add `OPENROUTER_API_KEY` to your environment to enable AI agents.',
             ];
         }
+
+        $this->logger->info('Agent chat request', [
+            'user_id' => $userId,
+            'modality' => $modality,
+            'model' => $modelConfig['model'] ?? 'default',
+        ]);
 
         $systemPrompt = $this->buildSystemPrompt($userId, $modality, $kbContext);
 
@@ -73,19 +82,42 @@ class AgentChatService
         );
 
         if ($response === null) {
+            $this->logger->error('OpenRouter chat API returned null', [
+                'user_id' => $userId,
+                'modality' => $modality,
+            ]);
             return null;
         }
 
+        $this->logger->debug('OpenRouter chat response', [
+            'user_id' => $userId,
+            'status' => $response['status'] ?? 'unknown',
+        ]);
+
         $decoded = json_decode($response['body'], true);
         if (!is_array($decoded)) {
+            $this->logger->error('OpenRouter chat response decode failed', [
+                'user_id' => $userId,
+                'body_preview' => substr($response['body'] ?? '', 0, 200),
+            ]);
             return null;
         }
 
         $content = $decoded['choices'][0]['message']['content'] ?? null;
 
         if ($content === null) {
+            $this->logger->error('OpenRouter chat response missing content', [
+                'user_id' => $userId,
+                'response_keys' => array_keys($decoded),
+            ]);
             return null;
         }
+
+        $this->logger->info('Agent chat completed', [
+            'user_id' => $userId,
+            'modality' => $modality,
+            'content_length' => strlen($content),
+        ]);
 
         return [
             'role' => 'assistant',

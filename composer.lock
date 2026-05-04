@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "716e5ce58fd7c3de33385c5234218a0d",
+    "content-hash": "72fbfb0837aafd9a5238b7c8787a2036",
     "packages": [
         {
             "name": "latte/latte",
@@ -138,6 +138,95 @@
                 "source": "https://github.com/marko-php/marko-authentication/tree/0.5.0"
             },
             "time": "2026-03-26T16:28:58+00:00"
+        },
+        {
+            "name": "marko/cache",
+            "version": "0.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/marko-php/marko-cache.git",
+                "reference": "74d051654014097eaf23ab008e52f386e9b441d8"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/marko-php/marko-cache/zipball/74d051654014097eaf23ab008e52f386e9b441d8",
+                "reference": "74d051654014097eaf23ab008e52f386e9b441d8",
+                "shasum": ""
+            },
+            "require": {
+                "marko/config": "self.version",
+                "marko/core": "self.version",
+                "php": "^8.5"
+            },
+            "require-dev": {
+                "marko/testing": "self.version",
+                "pestphp/pest": "^4.0"
+            },
+            "type": "marko-module",
+            "extra": {
+                "marko": {
+                    "module": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Marko\\Cache\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Cache interfaces and infrastructure for Marko Framework",
+            "support": {
+                "source": "https://github.com/marko-php/marko-cache/tree/0.5.0"
+            },
+            "time": "2026-03-26T16:28:58+00:00"
+        },
+        {
+            "name": "marko/cache-file",
+            "version": "0.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/marko-php/marko-cache-file.git",
+                "reference": "61d4aa3ae5ab24891eae3a4d7b6b16e083f3282e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/marko-php/marko-cache-file/zipball/61d4aa3ae5ab24891eae3a4d7b6b16e083f3282e",
+                "reference": "61d4aa3ae5ab24891eae3a4d7b6b16e083f3282e",
+                "shasum": ""
+            },
+            "require": {
+                "marko/cache": "self.version",
+                "marko/config": "self.version",
+                "marko/core": "self.version",
+                "php": "^8.5"
+            },
+            "require-dev": {
+                "marko/testing": "self.version",
+                "pestphp/pest": "^4.0"
+            },
+            "type": "marko-module",
+            "extra": {
+                "marko": {
+                    "module": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Marko\\Cache\\File\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "File-based cache driver for Marko Framework",
+            "support": {
+                "source": "https://github.com/marko-php/marko-cache-file/tree/0.5.0"
+            },
+            "time": "2026-05-02T01:27:31+00:00"
         },
         {
             "name": "marko/cli",
@@ -569,6 +658,89 @@
             "time": "2026-04-15T14:35:33+00:00"
         },
         {
+            "name": "marko/filesystem",
+            "version": "0.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/marko-php/marko-filesystem.git",
+                "reference": "93652a66b60233df4b6817e023e0219945d1b44e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/marko-php/marko-filesystem/zipball/93652a66b60233df4b6817e023e0219945d1b44e",
+                "reference": "93652a66b60233df4b6817e023e0219945d1b44e",
+                "shasum": ""
+            },
+            "require": {
+                "marko/config": "self.version",
+                "marko/core": "self.version",
+                "php": "^8.5"
+            },
+            "require-dev": {
+                "marko/testing": "self.version"
+            },
+            "type": "marko-module",
+            "extra": {
+                "marko": {
+                    "module": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Marko\\Filesystem\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Filesystem interfaces and infrastructure for Marko Framework",
+            "support": {
+                "source": "https://github.com/marko-php/marko-filesystem/tree/0.5.0"
+            },
+            "time": "2026-03-26T16:28:58+00:00"
+        },
+        {
+            "name": "marko/filesystem-local",
+            "version": "0.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/marko-php/marko-filesystem-local.git",
+                "reference": "9f66160e10f6b9f0b0eb37472375e492a4e2186f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/marko-php/marko-filesystem-local/zipball/9f66160e10f6b9f0b0eb37472375e492a4e2186f",
+                "reference": "9f66160e10f6b9f0b0eb37472375e492a4e2186f",
+                "shasum": ""
+            },
+            "require": {
+                "ext-fileinfo": "*",
+                "marko/filesystem": "self.version",
+                "php": "^8.5"
+            },
+            "type": "marko-module",
+            "extra": {
+                "marko": {
+                    "module": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Marko\\Filesystem\\Local\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Local filesystem driver for Marko Framework",
+            "support": {
+                "source": "https://github.com/marko-php/marko-filesystem-local/tree/0.5.0"
+            },
+            "time": "2026-05-02T01:27:31+00:00"
+        },
+        {
             "name": "marko/framework",
             "version": "0.5.0",
             "source": {
@@ -804,6 +976,181 @@
             "time": "2026-05-02T01:27:31+00:00"
         },
         {
+            "name": "marko/log",
+            "version": "0.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/marko-php/marko-log.git",
+                "reference": "38c26effc71240960640570d2a42474b88140bcb"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/marko-php/marko-log/zipball/38c26effc71240960640570d2a42474b88140bcb",
+                "reference": "38c26effc71240960640570d2a42474b88140bcb",
+                "shasum": ""
+            },
+            "require": {
+                "marko/config": "self.version",
+                "marko/core": "self.version",
+                "php": "^8.5"
+            },
+            "require-dev": {
+                "marko/testing": "self.version",
+                "pestphp/pest": "^4.0"
+            },
+            "type": "marko-module",
+            "extra": {
+                "marko": {
+                    "module": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Marko\\Log\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "PSR-3 compatible logging interfaces and formatters for Marko Framework",
+            "support": {
+                "source": "https://github.com/marko-php/marko-log/tree/0.5.0"
+            },
+            "time": "2026-03-26T16:28:58+00:00"
+        },
+        {
+            "name": "marko/log-file",
+            "version": "0.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/marko-php/marko-log-file.git",
+                "reference": "80b5df10668f435b50416f0d36cd3d430fc69063"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/marko-php/marko-log-file/zipball/80b5df10668f435b50416f0d36cd3d430fc69063",
+                "reference": "80b5df10668f435b50416f0d36cd3d430fc69063",
+                "shasum": ""
+            },
+            "require": {
+                "marko/config": "self.version",
+                "marko/core": "self.version",
+                "marko/log": "self.version",
+                "php": "^8.5"
+            },
+            "require-dev": {
+                "pestphp/pest": "^4.0"
+            },
+            "type": "marko-module",
+            "extra": {
+                "marko": {
+                    "module": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Marko\\Log\\File\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "File-based logging driver for Marko Framework",
+            "support": {
+                "source": "https://github.com/marko-php/marko-log-file/tree/0.5.0"
+            },
+            "time": "2026-05-02T01:27:31+00:00"
+        },
+        {
+            "name": "marko/queue",
+            "version": "0.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/marko-php/marko-queue.git",
+                "reference": "4fd2fea3a5a25d367c738308ebb6ee5d1301bec9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/marko-php/marko-queue/zipball/4fd2fea3a5a25d367c738308ebb6ee5d1301bec9",
+                "reference": "4fd2fea3a5a25d367c738308ebb6ee5d1301bec9",
+                "shasum": ""
+            },
+            "require": {
+                "marko/core": "self.version",
+                "php": "^8.5"
+            },
+            "require-dev": {
+                "marko/testing": "self.version",
+                "pestphp/pest": "^4.0"
+            },
+            "type": "library",
+            "extra": {
+                "marko": {
+                    "module": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Marko\\Queue\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Queue interfaces and infrastructure for Marko Framework",
+            "support": {
+                "source": "https://github.com/marko-php/marko-queue/tree/0.5.0"
+            },
+            "time": "2026-04-06T01:47:38+00:00"
+        },
+        {
+            "name": "marko/queue-database",
+            "version": "0.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/marko-php/marko-queue-database.git",
+                "reference": "0adff04a25ad7456d80f2bd152cdc81b277b5811"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/marko-php/marko-queue-database/zipball/0adff04a25ad7456d80f2bd152cdc81b277b5811",
+                "reference": "0adff04a25ad7456d80f2bd152cdc81b277b5811",
+                "shasum": ""
+            },
+            "require": {
+                "marko/core": "self.version",
+                "marko/database": "self.version",
+                "marko/queue": "self.version",
+                "php": "^8.5"
+            },
+            "require-dev": {
+                "pestphp/pest": "^4.0"
+            },
+            "type": "library",
+            "extra": {
+                "marko": {
+                    "module": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Marko\\Queue\\Database\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Database queue driver for Marko Framework",
+            "support": {
+                "source": "https://github.com/marko-php/marko-queue-database/tree/0.5.0"
+            },
+            "time": "2026-03-25T17:53:35+00:00"
+        },
+        {
             "name": "marko/routing",
             "version": "0.5.0",
             "source": {
@@ -972,6 +1319,53 @@
                 "source": "https://github.com/marko-php/marko-session-file/tree/0.5.0"
             },
             "time": "2026-05-02T01:27:31+00:00"
+        },
+        {
+            "name": "marko/sse",
+            "version": "0.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/marko-php/marko-sse.git",
+                "reference": "9a9998358357a43891df663d21dcf07647fce494"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/marko-php/marko-sse/zipball/9a9998358357a43891df663d21dcf07647fce494",
+                "reference": "9a9998358357a43891df663d21dcf07647fce494",
+                "shasum": ""
+            },
+            "require": {
+                "marko/core": "self.version",
+                "marko/routing": "self.version",
+                "php": "^8.5"
+            },
+            "require-dev": {
+                "marko/testing": "self.version",
+                "pestphp/pest": "^4.0"
+            },
+            "suggest": {
+                "marko/pubsub": "For real-time pub/sub-driven SSE streams"
+            },
+            "type": "marko-module",
+            "extra": {
+                "marko": {
+                    "module": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Marko\\Sse\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Server-Sent Events (SSE) support for Marko Framework",
+            "support": {
+                "source": "https://github.com/marko-php/marko-sse/tree/0.5.0"
+            },
+            "time": "2026-04-06T01:47:38+00:00"
         },
         {
             "name": "marko/validation",
@@ -1765,50 +2159,6 @@
                 "source": "https://github.com/marko-php/marko-dev-server/tree/0.5.0"
             },
             "time": "2026-05-02T01:27:31+00:00"
-        },
-        {
-            "name": "marko/log",
-            "version": "0.5.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/marko-php/marko-log.git",
-                "reference": "38c26effc71240960640570d2a42474b88140bcb"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/marko-php/marko-log/zipball/38c26effc71240960640570d2a42474b88140bcb",
-                "reference": "38c26effc71240960640570d2a42474b88140bcb",
-                "shasum": ""
-            },
-            "require": {
-                "marko/config": "self.version",
-                "marko/core": "self.version",
-                "php": "^8.5"
-            },
-            "require-dev": {
-                "marko/testing": "self.version",
-                "pestphp/pest": "^4.0"
-            },
-            "type": "marko-module",
-            "extra": {
-                "marko": {
-                    "module": true
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Marko\\Log\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "PSR-3 compatible logging interfaces and formatters for Marko Framework",
-            "support": {
-                "source": "https://github.com/marko-php/marko-log/tree/0.5.0"
-            },
-            "time": "2026-03-26T16:28:58+00:00"
         },
         {
             "name": "myclabs/deep-copy",
