@@ -146,7 +146,7 @@ class AgentChatService
             ];
         }
 
-        $model = $modelConfig['model'] ?? 'black-forest-labs/flux-2-schnell';
+        $model = $modelConfig['model'] ?? 'google/gemini-3.1-flash-image-preview';
 
         $body = [
             'model' => $model,
@@ -155,11 +155,6 @@ class AgentChatService
             ],
             'modalities' => ['image', 'text'],
         ];
-
-        // Some models only support image output without text
-        if (str_starts_with($model, 'black-forest-labs/flux') || str_starts_with($model, 'sourceful/')) {
-            $body['modalities'] = ['image'];
-        }
 
         $response = $this->http->post(
             'https://openrouter.ai/api/v1/chat/completions',
@@ -194,8 +189,14 @@ class AgentChatService
             foreach ($message['images'] as $img) {
                 if (is_string($img)) {
                     $images[] = $img;
-                } elseif (is_array($img) && !empty($img['data'])) {
-                    $images[] = $img['data'];
+                } elseif (is_array($img)) {
+                    if (!empty($img['data'])) {
+                        $images[] = $img['data'];
+                    } elseif (!empty($img['image_url']['url'])) {
+                        $images[] = $img['image_url']['url'];
+                    } elseif (!empty($img['url'])) {
+                        $images[] = $img['url'];
+                    }
                 }
             }
         }

@@ -180,6 +180,8 @@ class AgentController
         } catch (\RuntimeException $e) {
             $status = str_contains($e->getMessage(), 'limit reached') ? 429 : 500;
             return Response::json(['error' => $e->getMessage()], $status);
+        } catch (\Throwable $e) {
+            return Response::json(['error' => 'Agent error: ' . $e->getMessage()], 500);
         }
 
         return Response::json([
