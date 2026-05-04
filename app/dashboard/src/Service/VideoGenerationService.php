@@ -6,6 +6,7 @@ namespace App\Dashboard\Service;
 
 use App\Dashboard\Http\HttpClientInterface;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
+use Marko\Filesystem\Contracts\FilesystemInterface;
 use Marko\Log\Contracts\LoggerInterface;
 
 /**
@@ -19,6 +20,7 @@ class VideoGenerationService
         private readonly HttpClientInterface $http,
         private readonly QueryBuilderFactoryInterface $queryFactory,
         private readonly LoggerInterface $logger,
+        private readonly FilesystemInterface $filesystem,
     ) {}
 
     /**
@@ -164,12 +166,8 @@ class VideoGenerationService
             return null;
         }
 
-        $dir = '/var/www/storage/media/' . $campaignPath;
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
-        $localPath = $dir . '/' . $filename;
+        $relativePath = 'media/' . $campaignPath . '/' . $filename;
+        $localPath = '/var/www/storage/' . $relativePath;
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
@@ -192,7 +190,7 @@ class VideoGenerationService
             return null;
         }
 
-        file_put_contents($localPath, $data);
+        $this->filesystem->write($relativePath, $data);
 
         $this->logger->info('Video downloaded', [
             'local_path' => $localPath,
