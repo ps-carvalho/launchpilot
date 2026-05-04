@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'driver' => 'file',
+    'driver' => 'database',
     'lifetime' => 120,
     'expire_on_close' => false,
     'path' => __DIR__ . '/../storage/sessions',

@@ -17,7 +17,7 @@
         "marko/vite": "^0.5",
         "marko/authentication": "^0.5",
         "marko/session": "^0.5",
-        "marko/session-file": "^0.5",
+        "marko/session-database": "^0.5",
         "marko/security": "^0.5",
         "marko/encryption-openssl": "^0.5",
         "smalot/pdfparser": "^2.12",
@@ -37,6 +37,12 @@
             "Tests\\": "tests/"
         }
     },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "local/marko/session-database"
+        }
+    ],
     "config": {
         "allow-plugins": {
             "pestphp/pest-plugin": true

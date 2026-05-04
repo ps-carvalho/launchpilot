@@ -332,8 +332,8 @@ export default function CampaignShow({ campaign: initialCampaign, contentItems: 
                                                             <>
                                                                 <button
                                                                     onClick={async () => {
-                                                                        await fetch(`/api/content-items/${item.id}`, {
-                                                                            method: 'PUT',
+                                                                        await fetch(`/api/content-items/${item.id}/edit`, {
+                                                                            method: 'POST',
                                                                             credentials: 'same-origin',
                                                                             headers: { 'Content-Type': 'application/json' },
                                                                             body: JSON.stringify({ content: editText }),

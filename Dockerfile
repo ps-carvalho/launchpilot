@@ -21,6 +21,7 @@ RUN npm run build
 FROM composer:2 AS composer-builder
 WORKDIR /app
 COPY composer.json composer.lock ./
+COPY local/marko/session-database local/marko/session-database
 RUN composer install --optimize-autoloader --no-interaction --no-progress
 
 # ─── Stage 3: Base application files ──────────────────────────────────────────

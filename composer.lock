@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b0b3612ecbdcb6796a5bc1bbaf1d6b24",
+    "content-hash": "3a201dd36024653410a1c06d2503acd5",
     "packages": [
         {
             "name": "latte/latte",
@@ -1280,25 +1280,17 @@
             "time": "2026-03-26T16:28:58+00:00"
         },
         {
-            "name": "marko/session-file",
+            "name": "marko/session-database",
             "version": "0.5.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/marko-php/marko-session-file.git",
-                "reference": "bee4c6163032e1b65b5070d54ec19b542e85929b"
-            },
             "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/marko-php/marko-session-file/zipball/bee4c6163032e1b65b5070d54ec19b542e85929b",
-                "reference": "bee4c6163032e1b65b5070d54ec19b542e85929b",
-                "shasum": ""
+                "type": "path",
+                "url": "local/marko/session-database",
+                "reference": "2486c0fbf317f41a820e641816ee113618ba9f8b"
             },
             "require": {
-                "marko/session": "self.version",
+                "marko/database": "^0.5",
+                "marko/session": "^0.5",
                 "php": "^8.5"
-            },
-            "require-dev": {
-                "marko/testing": "self.version"
             },
             "type": "marko-module",
             "extra": {
@@ -1308,18 +1300,16 @@
             },
             "autoload": {
                 "psr-4": {
-                    "Marko\\Session\\File\\": "src/"
+                    "Marko\\Session\\Database\\": "src/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
-            "description": "File-based session driver for Marko Framework",
-            "support": {
-                "source": "https://github.com/marko-php/marko-session-file/tree/0.5.0"
-            },
-            "time": "2026-05-02T01:27:31+00:00"
+            "description": "Database session driver for Marko Framework",
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "marko/sse",
