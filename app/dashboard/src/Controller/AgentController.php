@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Dashboard\Controller;
 
 use App\Dashboard\Context\Builder\ContextBuilderRegistry;
-use App\Dashboard\Context\UserContext;
+use App\User\Context\UserContext;
 use App\Dashboard\Gate\CampaignGate;
 use App\Dashboard\Http\RequestBodyParser;
 use App\Dashboard\Job\DownloadVideoJob;

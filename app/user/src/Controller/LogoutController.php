@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Dashboard\Controller;
+namespace App\User\Controller;
 
-use App\Dashboard\Context\UserContext;
+use App\User\Context\UserContext;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Middleware;

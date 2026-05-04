@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
-use App\Dashboard\Context\UserContext;
+use App\User\Context\UserContext;
 use App\Dashboard\Gate\KnowledgeBaseGate;
 use App\Dashboard\Repository\KnowledgeBaseRepository;
 use App\Dashboard\Job\ProcessDocumentJob;

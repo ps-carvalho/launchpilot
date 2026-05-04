@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
-use App\Dashboard\Context\UserContext;
+use App\User\Context\UserContext;
 use App\Dashboard\Gate\ContentItemGate;
 use App\Dashboard\Http\RequestBodyParser;
 use Marko\Authentication\Middleware\AuthMiddleware;

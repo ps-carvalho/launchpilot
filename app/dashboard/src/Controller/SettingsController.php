@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Dashboard\Controller;
 
 use App\Dashboard\Authorization\WorkspaceAuthorization;
-use App\Dashboard\Context\UserContext;
+use App\User\Context\UserContext;
 use App\Dashboard\Http\RequestBodyParser;
 use App\Dashboard\Service\AgentPromptRegistry;
 use App\Dashboard\Service\ApiKeyResolver;

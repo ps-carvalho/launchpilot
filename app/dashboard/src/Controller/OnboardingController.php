@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Dashboard\Controller;
 
 use App\Dashboard\Authorization\WorkspaceAuthorization;
-use App\Dashboard\Context\UserContext;
+use App\User\Context\UserContext;
 use App\Dashboard\Flow\OnboardingFlow;
 use App\Dashboard\Http\RequestBodyParser;
 use Marko\Authentication\Middleware\AuthMiddleware;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Web\Auth\DatabaseUserProvider;
+use App\User\Provider\DatabaseUserProvider;
 
 beforeEach(function () {
     $this->provider = $this->container()->get(DatabaseUserProvider::class);

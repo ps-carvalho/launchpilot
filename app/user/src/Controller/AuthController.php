@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Web\Controller;
+namespace App\User\Controller;
 
 use Marko\Authentication\AuthManager;
 use Marko\Authentication\Contracts\PasswordHasherInterface;

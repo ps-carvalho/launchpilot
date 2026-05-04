@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Dashboard\Context;
+namespace App\User\Context;
 
 use Marko\Authentication\AuthManager;
 

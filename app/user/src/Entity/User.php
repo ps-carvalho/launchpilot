@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Web\Entity;
+namespace App\User\Entity;
 
 use Marko\Authentication\AuthenticatableInterface;
 

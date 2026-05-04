@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Web\Auth;
+namespace App\User\Provider;
 
-use App\Web\Entity\User;
+use App\User\Entity\User;
 use Marko\Authentication\AuthenticatableInterface;
 use Marko\Authentication\Contracts\PasswordHasherInterface;
 use Marko\Authentication\Contracts\UserProviderInterface;
