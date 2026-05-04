@@ -51,7 +51,7 @@ services:
       DB_PASSWORD: launchpilot
       VITE_USE_DEV_SERVER: "false"
       INERTIA_SSR_ENABLED: "false"
-      SESSION_DRIVER: file
+      SESSION_DRIVER: database
       LOG_DRIVER: file
       LOG_PATH: storage/logs
       LOG_LEVEL: info

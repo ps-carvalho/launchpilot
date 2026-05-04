@@ -1,0 +1,22 @@
+{
+    "name": "marko/session-database",
+    "version": "0.5.0",
+    "description": "Database session driver for Marko Framework",
+    "type": "marko-module",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5",
+        "marko/session": "^0.5",
+        "marko/database": "^0.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Marko\\Session\\Database\\": "src/"
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}
