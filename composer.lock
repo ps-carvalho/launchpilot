@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "72fbfb0837aafd9a5238b7c8787a2036",
+    "content-hash": "b0b3612ecbdcb6796a5bc1bbaf1d6b24",
     "packages": [
         {
             "name": "latte/latte",
@@ -184,24 +184,25 @@
             "time": "2026-03-26T16:28:58+00:00"
         },
         {
-            "name": "marko/cache-file",
+            "name": "marko/cache-redis",
             "version": "0.5.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/marko-php/marko-cache-file.git",
-                "reference": "61d4aa3ae5ab24891eae3a4d7b6b16e083f3282e"
+                "url": "https://github.com/marko-php/marko-cache-redis.git",
+                "reference": "100bffac91906a20f80d6ee6b19972cc88dabc22"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/marko-php/marko-cache-file/zipball/61d4aa3ae5ab24891eae3a4d7b6b16e083f3282e",
-                "reference": "61d4aa3ae5ab24891eae3a4d7b6b16e083f3282e",
+                "url": "https://api.github.com/repos/marko-php/marko-cache-redis/zipball/100bffac91906a20f80d6ee6b19972cc88dabc22",
+                "reference": "100bffac91906a20f80d6ee6b19972cc88dabc22",
                 "shasum": ""
             },
             "require": {
                 "marko/cache": "self.version",
                 "marko/config": "self.version",
                 "marko/core": "self.version",
-                "php": "^8.5"
+                "php": "^8.5",
+                "predis/predis": "^2.0"
             },
             "require-dev": {
                 "marko/testing": "self.version",
@@ -215,18 +216,18 @@
             },
             "autoload": {
                 "psr-4": {
-                    "Marko\\Cache\\File\\": "src/"
+                    "Marko\\Cache\\Redis\\": "src/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
-            "description": "File-based cache driver for Marko Framework",
+            "description": "Redis cache driver for Marko Framework",
             "support": {
-                "source": "https://github.com/marko-php/marko-cache-file/tree/0.5.0"
+                "source": "https://github.com/marko-php/marko-cache-redis/tree/0.5.0"
             },
-            "time": "2026-05-02T01:27:31+00:00"
+            "time": "2026-03-25T17:53:35+00:00"
         },
         {
             "name": "marko/cli",
@@ -1533,6 +1534,68 @@
                 "source": "https://github.com/marko-php/marko-vite/tree/0.5.0"
             },
             "time": "2026-05-01T14:38:33+00:00"
+        },
+        {
+            "name": "predis/predis",
+            "version": "v2.4.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/predis/predis.git",
+                "reference": "07105e050622ed80bd60808367ced9e379f31530"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/predis/predis/zipball/07105e050622ed80bd60808367ced9e379f31530",
+                "reference": "07105e050622ed80bd60808367ced9e379f31530",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.2 || ^8.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.3",
+                "phpstan/phpstan": "^1.9",
+                "phpunit/phpcov": "^6.0 || ^8.0",
+                "phpunit/phpunit": "^8.0 || ^9.4"
+            },
+            "suggest": {
+                "ext-relay": "Faster connection with in-memory caching (>=0.6.2)"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Predis\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Till Krüss",
+                    "homepage": "https://till.im",
+                    "role": "Maintainer"
+                }
+            ],
+            "description": "A flexible and feature-complete Redis/Valkey client for PHP.",
+            "homepage": "http://github.com/predis/predis",
+            "keywords": [
+                "nosql",
+                "predis",
+                "redis"
+            ],
+            "support": {
+                "issues": "https://github.com/predis/predis/issues",
+                "source": "https://github.com/predis/predis/tree/v2.4.1"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/sponsors/tillkruss",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-11-12T18:00:11+00:00"
         },
         {
             "name": "psr/container",
