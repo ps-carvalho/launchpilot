@@ -4,7 +4,13 @@ declare(strict_types=1);
 
 return [
     'driver' => env('LOG_DRIVER', 'file'),
-    'path' => env('LOG_PATH', 'storage/logs'),
+    'path' => (static function (): string {
+        $path = env('LOG_PATH', 'storage/logs');
+        if (str_starts_with($path, '/')) {
+            return $path;
+        }
+        return dirname(__DIR__) . '/' . $path;
+    })(),
     'level' => env('LOG_LEVEL', 'debug'),
     'channel' => env('LOG_CHANNEL', 'launchpilot'),
     'format' => '[{datetime}] {channel}.{level}: {message} {context}',

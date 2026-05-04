@@ -219,6 +219,7 @@ class AgentController
             'text', 'social', 'content', 'seo', 'brainstorm', 'media' => 'text_content',
             'image' => 'image',
             'video' => 'video',
+            'audio' => 'audio',
             default => 'text_content',
         };
 
@@ -239,6 +240,75 @@ class AgentController
             'item_id' => $itemId,
             'message' => 'Saved to campaign.',
         ]);
+    }
+
+    #[Post('/api/media/{assetId}/delete')]
+    public function deleteMedia(int $assetId): Response
+    {
+        $userId = $this->userContext->id();
+
+        $asset = $this->queryFactory->create()->table('media_assets')
+            ->where('id', '=', $assetId)
+            ->first();
+
+        if ($asset === null) {
+            return Response::json(['error' => 'Asset not found.'], 404);
+        }
+
+        $campaign = $this->campaignGate->forUser($userId, (int) $asset['campaign_id']);
+        if ($campaign === null) {
+            return Response::json(['error' => 'Not found.'], 404);
+        }
+
+        // Delete physical file
+        if (!empty($asset['local_path']) && file_exists($asset['local_path'])) {
+            @unlink($asset['local_path']);
+        }
+
+        // Delete DB record
+        $this->queryFactory->create()->table('media_assets')
+            ->where('id', '=', $assetId)
+            ->delete();
+
+        return Response::json(['message' => 'Asset deleted.']);
+    }
+
+    #[Get('/api/media/{assetId}/download')]
+    public function downloadMedia(int $assetId): Response
+    {
+        $userId = $this->userContext->id();
+
+        $asset = $this->queryFactory->create()->table('media_assets')
+            ->where('id', '=', $assetId)
+            ->first();
+
+        if ($asset === null) {
+            return Response::json(['error' => 'Asset not found.'], 404);
+        }
+
+        $campaign = $this->campaignGate->forUser($userId, (int) $asset['campaign_id']);
+        if ($campaign === null) {
+            return Response::json(['error' => 'Not found.'], 404);
+        }
+
+        $path = $asset['local_path'] ?? '';
+        if (empty($path) || !file_exists($path)) {
+            return Response::json(['error' => 'File not found.'], 404);
+        }
+
+        $mimeType = mime_content_type($path) ?: 'application/octet-stream';
+        $filename = basename($path);
+        $content = file_get_contents($path);
+
+        return new Response(
+            body: $content,
+            statusCode: 200,
+            headers: [
+                'Content-Type' => $mimeType,
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control' => 'public, max-age=31536000',
+            ],
+        );
     }
 
     #[Get('/api/agents/models')]
