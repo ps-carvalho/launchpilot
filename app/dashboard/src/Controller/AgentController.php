@@ -6,12 +6,14 @@ namespace App\Dashboard\Controller;
 
 use App\Dashboard\Context\UserContext;
 use App\Dashboard\Http\RequestBodyParser;
+use App\Dashboard\Job\DownloadVideoJob;
 use App\Dashboard\Pipeline\AgentPipeline;
 use App\Dashboard\Service\AgentModelResolver;
 use App\Dashboard\Service\VideoGenerationService;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Inertia\Middleware\InertiaMiddleware;
+use Marko\Queue\QueueInterface;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
@@ -29,6 +31,7 @@ class AgentController
         private readonly RequestBodyParser $bodyParser,
         private readonly AgentModelResolver $modelResolver,
         private readonly VideoGenerationService $videoService,
+        private readonly QueueInterface $queue,
     ) {}
 
     #[Get('/api/campaigns/{campaignId}/agents/{modality}/session')]
@@ -242,19 +245,13 @@ class AgentController
         }
 
         if ($result['status'] === 'completed' && !empty($result['unsigned_urls'])) {
-            $filename = $assetId . '_' . time() . '.mp4';
-            $localPath = $this->videoService->download(
-                $result['unsigned_urls'][0],
-                (string) $asset['campaign_id'],
-                $filename,
-                $userId
-            );
-
-            if ($localPath !== null) {
-                $this->videoService->markReady($assetId, $localPath, $result['unsigned_urls'][0]);
-            } else {
-                $this->videoService->markFailed($assetId, 'Download failed.');
-            }
+            $this->queue->push(new DownloadVideoJob(
+                assetId: $assetId,
+                jobId: $jobId,
+                userId: $userId,
+                downloadUrl: $result['unsigned_urls'][0],
+                campaignId: (int) $asset['campaign_id'],
+            ));
         } elseif (in_array($result['status'], ['failed', 'error'], true)) {
             $this->videoService->markFailed($assetId, 'Generation failed.');
         }

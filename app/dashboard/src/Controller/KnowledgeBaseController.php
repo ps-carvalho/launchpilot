@@ -7,12 +7,14 @@ namespace App\Dashboard\Controller;
 use App\Dashboard\Context\UserContext;
 use App\Dashboard\Gate\KnowledgeBaseGate;
 use App\Dashboard\Repository\KnowledgeBaseRepository;
+use App\Dashboard\Job\ProcessDocumentJob;
 use App\Dashboard\Service\EmbeddingService;
 use App\Dashboard\Service\KnowledgeBaseService;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Inertia\Inertia;
 use Marko\Inertia\Middleware\InertiaMiddleware;
+use Marko\Queue\QueueInterface;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
@@ -33,6 +35,7 @@ class KnowledgeBaseController
         private readonly SessionInterface $session,
         private readonly KnowledgeBaseRepository $kbRepo,
         private readonly EmbeddingService $embedder,
+        private readonly QueueInterface $queue,
     ) {}
 
     #[Get('/knowledge-base')]
@@ -98,19 +101,21 @@ class KnowledgeBaseController
             return Response::redirect('/knowledge-base');
         }
 
-        $result = $this->kbService->processUpload(
+        $documentId = $this->kbService->createDocument(
             $file['tmp_name'],
             $file['name'],
             $mimeType,
             (int) $workspace['id'],
         );
 
-        if ($result === null) {
+        if ($documentId === null) {
             $this->session->flash()->add('error', 'Could not parse the uploaded file.');
             return Response::redirect('/knowledge-base');
         }
 
-        $this->session->flash()->add('success', "Document uploaded and split into {$result['chunks']} chunks.");
+        $this->queue->push(new ProcessDocumentJob($documentId));
+
+        $this->session->flash()->add('success', 'Document uploaded and queued for processing.');
 
         return Response::redirect('/knowledge-base');
     }
