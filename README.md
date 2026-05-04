@@ -15,7 +15,7 @@ LaunchPilot is an AI-driven marketing campaign planner for small businesses and 
 | **Attribute Routing** | PHP 8 `#[Get('/campaigns')]` and `#[Post('/api/...')]` attributes across 10+ controllers |
 | **DI Container** | Constructor auto-wiring for 30+ services; custom module bindings for context builder registry |
 | **Middleware Pipeline** | Session → Auth → Inertia middleware chain on every dashboard route |
-| **Inertia.js Integration** | React 19 SPA with SSR support, Vite HMR, and shared data propagation |
+| **Inertia.js Integration** | React 19 SPA with Vite HMR and shared data propagation |
 | **Module System** | Three modules (`app/user`, `app/web`, `app/dashboard`) with independent bindings |
 | **PostgreSQL + pgvector** | Vector similarity search for RAG-powered AI agents |
 | **Queue System** | Database-backed queue with dedicated worker container for background jobs |
@@ -49,12 +49,13 @@ app/
 ## Features
 
 - **Campaign Management** — Create, edit, archive, and export marketing campaigns
-- **AI Agent Chat** — 4 agent types (Social, Content, SEO, Brainstorm) with session persistence
+- **AI Agent Chat** — 4 modalities: text, image, video, and audio generation with session persistence
 - **Knowledge Base** — Upload TXT, MD, PDF, DOCX; scrape websites via URL; automatic chunking; pgvector similarity search
 - **Content Workflow** — Draft → Approved → Scheduled → Published status transitions
 - **GSC Integration** — Google Search Console OAuth for SEO agent enrichment
 - **Tier System** — Free (10 runs/day) and Pro (unlimited) with BYOK support
 - **Background Jobs** — Document embedding processed asynchronously via queue worker
+- **Media Assets** — Download and delete generated images, videos, and audio clips
 
 ## Tech Stack
 
@@ -64,49 +65,80 @@ app/
 | Frontend | React 19 + Inertia.js + Tailwind CSS v4 + Vite |
 | Database | PostgreSQL 16 with pgvector extension |
 | Queue | Database-backed (`marko/queue-database`) with Docker worker |
-| Cache | File-based (`marko/cache-file`) |
+| Cache | Redis (`marko/cache-redis`) |
+| Sessions | Database-backed (`marko/session-database`) — local path package |
 | Logging | File-based (`marko/log-file`) |
 | Filesystem | Local (`marko/filesystem-local`) |
-| LLM | OpenRouter API (GPT-4o Mini default) |
+| LLM | OpenRouter API (Gemini, Llama, Veo, Sesame models) |
 | Auth | Session-based (`marko/authentication`) |
 | Validation | `marko/validation` with 422 error responses |
 | Testing | Pest PHP 4.0 + Playwright E2E |
 
-## Getting Started
+## Quick Start — Active Development
 
-### Quick Start — Docker (Recommended)
+The recommended workflow for day-to-day development uses Docker Compose with volume mounts for live reloading.
+
+### 1. Build frontend assets
 
 ```bash
-# Build and start all services (app, worker, nginx, postgres)
+npm install
+npm run build
+```
+
+Frontend assets must be built on the host first so the `public/build` directory exists when containers start.
+
+### 2. Start services
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+```
+
+This starts:
+- `postgres` — PostgreSQL 16 with pgvector
+- `redis` — Redis 7 (cache)
+- `app` — PHP-FPM with live code mounts (`./app`, `./config`, `./modules`, `./public`, `./storage`)
+- `worker` — Queue worker with live code mounts
+- `nginx` — Reverse proxy with `./public` mounted for static assets
+
+### 3. Run migrations
+
+```bash
+docker compose exec app php vendor/bin/marko db:migrate
+```
+
+### 4. Access the app
+
+- **App:** http://localhost:8080
+- **Default login:** `admin@spavn.dev` / `password`
+
+### 5. Optional: Vite HMR
+
+For hot module replacement during frontend development:
+
+```bash
+# In a separate terminal
+npm run dev
+```
+
+Then set `VITE_USE_DEV_SERVER: "true"` in `docker-compose.dev.yml` and restart the app container.
+
+> ⚠️ **Do not leave `VITE_USE_DEV_SERVER=true` permanently.** If the Vite dev server is not running on your host, the dashboard will show a white screen because asset URLs point to `http://host.docker.internal:5173`.
+
+---
+
+### Production-like Build (No Live Reload)
+
+```bash
+# Build and start all services from images (no volume mounts)
 docker compose up -d --build
 
 # Run migrations
-./vendor/bin/marko migrate
+docker compose exec app php vendor/bin/marko db:migrate
 
-# The app is available at http://localhost:8080
+# App is available at http://localhost:8080
 ```
 
-All three app targets (`app`, `worker`, `nginx`) are built together from the same base so asset hashes stay in sync. The Dockerfile purges stale `public/build` artifacts before each build to prevent old hashed files from leaking into new images.
-
-### Active Development — Live Reloading
-
-For day-to-day development with live code reloading and Vite HMR:
-
-```bash
-# Start infrastructure (postgres + worker + nginx with volume mounts)
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-
-# Run migrations
-./vendor/bin/marko migrate
-
-# Start Vite dev server on your host for HMR
-npm run dev
-
-# App:        http://localhost:8080  (nginx → PHP-FPM)
-# Vite HMR:   http://localhost:5173  (dev server, proxied for assets)
-```
-
-The dev override mounts your local `./app`, `./config`, `./modules`, and `./public` directories so PHP and frontend changes are reflected immediately without rebuilding containers.
+All three targets (`app`, `worker`, `nginx`) are built together from the same base so asset hashes stay in sync. The Dockerfile purges stale `public/build` artifacts before each build to prevent old hashed files from leaking into new images.
 
 ### Local Development — No Docker (except PostgreSQL)
 
@@ -115,15 +147,17 @@ The dev override mounts your local `./app`, `./config`, `./modules`, and `./publ
 composer install
 npm install
 
+# Build assets
+npm run build
+
 # Start PostgreSQL (Docker)
-docker compose up -d postgres
+docker compose up -d postgres redis
 
 # Run migrations
-./vendor/bin/marko migrate
+php vendor/bin/marko db:migrate
 
-# Start dev servers
-./vendor/bin/marko up   # PHP on localhost:8000
-npm run dev             # Vite on localhost:5173
+# Start PHP dev server
+php vendor/bin/marko up   # localhost:8000
 ```
 
 ## Queue Worker
@@ -135,10 +169,10 @@ The worker processes background jobs (e.g., document chunking + embedding) from 
 docker compose up -d worker
 
 # Or run directly for debugging
-php vendor/bin/marko queue:work
+docker compose exec worker php vendor/bin/marko queue:work
 
 # Process one job and exit
-php vendor/bin/marko queue:work --once
+docker compose exec worker php vendor/bin/marko queue:work --once
 ```
 
 Jobs are dispatched automatically when you upload documents or scrape URLs. The worker requires `OPENROUTER_API_KEY` to generate embeddings.
@@ -146,7 +180,7 @@ Jobs are dispatched automatically when you upload documents or scrape URLs. The 
 ## Testing
 
 ```bash
-# PHP unit + integration tests (201 tests, 370+ assertions)
+# PHP unit + integration tests
 php vendor/bin/pest
 
 # E2E tests with Playwright
@@ -155,6 +189,21 @@ npm run test:e2e
 # Build for production
 npm run build
 ```
+
+## Environment Variables
+
+Key variables in `.env`:
+
+| Variable | Description | Default |
+|---|---|---|
+| `APP_ENV` | Application environment | `local` |
+| `APP_KEY` | Encryption key for sessions/security | *(required)* |
+| `DB_CONNECTION` / `DB_HOST` / `DB_DATABASE` | PostgreSQL settings | `pgsql` / `postgres` / `launchpilot` |
+| `OPENROUTER_API_KEY` | API key for OpenRouter LLM access | *(required for AI features)* |
+| `SESSION_DRIVER` | Session storage driver | `database` |
+| `CACHE_DRIVER` | Cache driver | `redis` |
+| `QUEUE_DRIVER` | Queue driver | `database` |
+| `VITE_USE_DEV_SERVER` | Use Vite dev server for HMR | `false` |
 
 ## Collaborate
 
