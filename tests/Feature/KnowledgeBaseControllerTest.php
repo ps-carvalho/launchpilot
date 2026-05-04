@@ -226,6 +226,106 @@ describe('upload', function () {
     });
 });
 
+describe('scrape', function () {
+    it('creates a document from a scraped URL', function () {
+        $http = new FakeHttpClient();
+        $html = '<html><head><title>Test Site</title><meta name="description" content="A test description"></head><body><h1>Welcome</h1><p>This is the body content.</p></body></html>';
+        $http->fake('https://example.com', 200, $html);
+        $this->container()->instance(\App\Dashboard\Http\HttpClientInterface::class, $http);
+        $this->controller = $this->container()->get(KnowledgeBaseController::class);
+
+        $userId = $this->createUser();
+        $this->loginAsUser($userId);
+        $wsId = $this->createWorkspace($userId);
+
+        $request = new \Marko\Routing\Http\Request(
+            server: ['REQUEST_METHOD' => 'POST'],
+            query: [],
+            post: ['url' => 'https://example.com'],
+            body: '',
+        );
+
+        $response = $this->controller->scrape($request);
+
+        expect($response->statusCode())->toBe(302);
+
+        $doc = $this->query()->create()->table('knowledge_documents')
+            ->where('workspace_id', '=', $wsId)
+            ->first();
+
+        expect($doc['source_url'])->toBe('https://example.com');
+        expect($doc['original_name'])->toBe('example.com');
+        expect($doc['raw_text'])->toContain('Test Site');
+    });
+
+    it('rejects invalid URL', function () {
+        $userId = $this->createUser();
+        $this->loginAsUser($userId);
+        $this->createWorkspace($userId);
+
+        $request = new \Marko\Routing\Http\Request(
+            server: ['REQUEST_METHOD' => 'POST'],
+            query: [],
+            post: ['url' => 'not-a-url'],
+            body: '',
+        );
+
+        $response = $this->controller->scrape($request);
+
+        expect($response->statusCode())->toBe(302);
+
+        $session = $this->container()->get(\Marko\Session\Contracts\SessionInterface::class);
+        $flash = $session->flash()->all();
+        expect($flash['error'] ?? [])->toContain('Please enter a valid URL.');
+    });
+
+    it('fails when scrape returns empty content', function () {
+        $http = new FakeHttpClient();
+        $http->fake('https://example.com', 200, '<html><head></head><body></body></html>');
+        $this->container()->instance(\App\Dashboard\Http\HttpClientInterface::class, $http);
+        $this->controller = $this->container()->get(KnowledgeBaseController::class);
+
+        $userId = $this->createUser();
+        $this->loginAsUser($userId);
+        $this->createWorkspace($userId);
+
+        $request = new \Marko\Routing\Http\Request(
+            server: ['REQUEST_METHOD' => 'POST'],
+            query: [],
+            post: ['url' => 'https://example.com'],
+            body: '',
+        );
+
+        $response = $this->controller->scrape($request);
+
+        expect($response->statusCode())->toBe(302);
+
+        $session = $this->container()->get(\Marko\Session\Contracts\SessionInterface::class);
+        $flash = $session->flash()->all();
+        expect($flash['error'] ?? [])->toContain('No content found at that URL.');
+    });
+
+    it('fails when no workspace exists', function () {
+        $userId = $this->createUser();
+        $this->loginAsUser($userId);
+
+        $request = new \Marko\Routing\Http\Request(
+            server: ['REQUEST_METHOD' => 'POST'],
+            query: [],
+            post: ['url' => 'https://example.com'],
+            body: '',
+        );
+
+        $response = $this->controller->scrape($request);
+
+        expect($response->statusCode())->toBe(302);
+
+        $session = $this->container()->get(\Marko\Session\Contracts\SessionInterface::class);
+        $flash = $session->flash()->all();
+        expect($flash['error'] ?? [])->toContain('No workspace found.');
+    });
+});
+
 describe('delete', function () {
     it('removes document and its chunks', function () {
         $userId = $this->createUser();

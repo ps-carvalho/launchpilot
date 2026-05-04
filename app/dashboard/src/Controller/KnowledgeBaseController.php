@@ -10,6 +10,7 @@ use App\Dashboard\Repository\KnowledgeBaseRepository;
 use App\Dashboard\Job\ProcessDocumentJob;
 use App\Dashboard\Service\EmbeddingService;
 use App\Dashboard\Service\KnowledgeBaseService;
+use App\Dashboard\Service\WebsiteScraper;
 use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Database\Query\QueryBuilderFactoryInterface;
 use Marko\Inertia\Inertia;
@@ -38,6 +39,7 @@ class KnowledgeBaseController
         private readonly EmbeddingService $embedder,
         private readonly QueueInterface $queue,
         private readonly ValidatorInterface $validator,
+        private readonly WebsiteScraper $scraper,
     ) {}
 
     #[Get('/knowledge-base')]
@@ -156,6 +158,65 @@ class KnowledgeBaseController
         $results = $this->kbRepo->findSimilarChunks($embeddings[0], (int) $workspace['id'], 5);
 
         return Response::json(['results' => $results]);
+    }
+
+    #[Post('/knowledge-base/scrape')]
+    public function scrape(Request $request): Response
+    {
+        $userId = $this->userContext->id();
+        $workspace = $this->kbGate->firstWorkspaceForUser($userId);
+
+        if ($workspace === null) {
+            $this->session->flash()->add('error', 'No workspace found.');
+            return Response::redirect('/knowledge-base');
+        }
+
+        $data = $request->post();
+        $errors = $this->validator->validate($data, [
+            'url' => 'required|url',
+        ]);
+
+        if ($errors->isNotEmpty()) {
+            $this->session->flash()->add('error', 'Please enter a valid URL.');
+            return Response::redirect('/knowledge-base');
+        }
+
+        $url = $data['url'];
+        $scraped = $this->scraper->scrape($url);
+
+        if ($scraped === null) {
+            $this->session->flash()->add('error', 'Could not scrape that URL. Please check the address and try again.');
+            return Response::redirect('/knowledge-base');
+        }
+
+        $rawText = implode("\n\n", array_filter([
+            $scraped['title'] ? "Title: {$scraped['title']}" : null,
+            $scraped['description'] ? "Description: {$scraped['description']}" : null,
+            $scraped['body'] ? "Content:\n{$scraped['body']}" : null,
+        ]));
+
+        if (trim($rawText) === '') {
+            $this->session->flash()->add('error', 'No content found at that URL.');
+            return Response::redirect('/knowledge-base');
+        }
+
+        $documentId = $this->queryFactory->create()->table('knowledge_documents')->insert([
+            'workspace_id' => $workspace['id'],
+            'source_url' => $url,
+            'original_name' => parse_url($url, PHP_URL_HOST) ?: $url,
+            'raw_text' => $rawText,
+            'metadata' => json_encode([
+                'title' => $scraped['title'],
+                'description' => $scraped['description'],
+                'source' => 'website_scrape',
+            ]),
+        ]);
+
+        $this->queue->push(new ProcessDocumentJob($documentId));
+
+        $this->session->flash()->add('success', 'Website added and queued for processing.');
+
+        return Response::redirect('/knowledge-base');
     }
 
     #[Post('/knowledge-base/{id}/delete')]
