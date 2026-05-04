@@ -1,5 +1,7 @@
 # LaunchPilot AI — Marko Framework Product Demo
 
+> ⚠️ **Work in Progress** — This project is under active development. Features, APIs, and architecture are evolving rapidly. Not yet ready for production use.
+>
 > **A production-grade AI marketing platform built to showcase the [Marko PHP Framework](https://marko.build).**
 >
 > **Collaborations welcome!** If you're exploring Marko, want to contribute, or are building something similar, open an issue or PR.

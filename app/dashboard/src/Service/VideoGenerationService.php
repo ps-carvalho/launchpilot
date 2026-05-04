@@ -79,7 +79,7 @@ class VideoGenerationService
         return [
             'job_id' => $decoded['id'],
             'status' => $decoded['status'] ?? 'submitted',
-            'poll_url' => $decoded['url'] ?? null,
+            'poll_url' => $decoded['polling_url'] ?? null,
         ];
     }
 
@@ -98,7 +98,6 @@ class VideoGenerationService
 
         $response = $this->http->get(
             'https://openrouter.ai/api/v1/videos/' . $jobId,
-            [],
             [
                 'Authorization' => 'Bearer ' . $apiKey,
                 'HTTP-Referer' => 'https://launchpilot.ai',
@@ -127,8 +126,14 @@ class VideoGenerationService
      *
      * @return string|null Local file path
      */
-    public function download(string $url, string $campaignPath, string $filename): ?string
+    public function download(string $url, string $campaignPath, string $filename, int $userId): ?string
     {
+        $apiKey = $this->apiKeyResolver->resolve($userId);
+
+        if (empty($apiKey)) {
+            return null;
+        }
+
         $dir = '/var/www/storage/media/' . $campaignPath;
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
@@ -140,6 +145,11 @@ class VideoGenerationService
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 120);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $apiKey,
+            'HTTP-Referer: https://launchpilot.ai',
+            'X-Title: LaunchPilot',
+        ]);
         $data = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);

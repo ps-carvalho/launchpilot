@@ -246,7 +246,8 @@ class AgentController
             $localPath = $this->videoService->download(
                 $result['unsigned_urls'][0],
                 (string) $asset['campaign_id'],
-                $filename
+                $filename,
+                $userId
             );
 
             if ($localPath !== null) {

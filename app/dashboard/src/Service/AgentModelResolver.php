@@ -26,7 +26,7 @@ class AgentModelResolver
             'max_tokens' => 2000,
         ],
         'video' => [
-            'model' => 'meta-llama/llama-3.3-70b-instruct',
+            'model' => 'google/veo-3.1-lite',
             'temperature' => 0.7,
             'max_tokens' => 2000,
         ],
